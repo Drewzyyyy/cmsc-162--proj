@@ -50,9 +50,7 @@ instructions.grid(columnspan=3, column=0, row=1)
 
 # Browse btn
 browse_text = tk.StringVar()
-browse_btn = tk.Button(root, textvariable=browse_text,
-                       fg="white", bg="#263D42",
-                       command=open_image)
+browse_btn = tk.Button(root, textvariable=browse_text,fg="blue", bg="#263D42",command=open_image)
 browse_text.set("Browse")
 browse_btn.grid(column=1, row=2)
 
