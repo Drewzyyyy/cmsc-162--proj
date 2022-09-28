@@ -1,15 +1,19 @@
 from tkinter import Tk, \
     PhotoImage, \
     Menu
+from sys import platform
 from centerFrame import CenterFrame
 from rightFrame import RightFrame
-
 
 if __name__ == "__main__":
     # Window Config
     root = Tk()
     root.title('Cola PhotoEditor')
-    root.attributes('-zoomed', True)
+    # Setting window to zoomed is platform dependent
+    if platform == "linux" or platform == "linux2":
+        root.attributes("-zoomed", True)
+    else:
+        root.state("zoomed")
     root_icon = PhotoImage(file='assets/logo.png')
     root.iconphoto(False, root_icon)
 

@@ -11,10 +11,10 @@ def read_pcx_header(file):
         pcx_headers['version'] = unpack('B', pcx.read(1))[0]
         pcx_headers['encoding '] = unpack('B', pcx.read(1))[0]
         pcx_headers['bpp'] = unpack('B', pcx.read(1))[0]
-        pcx_headers['window_x_min'] = unpack('H', pcx.read(2))[0]
-        pcx_headers['window_y_min'] = unpack('H', pcx.read(2))[0]
-        pcx_headers['window_x_max'] = unpack('H', pcx.read(2))[0]
-        pcx_headers['window_y_max'] = unpack('H', pcx.read(2))[0]
+        pcx_headers['dimensions'] = (unpack('H', pcx.read(2))[0],
+                                     unpack('H', pcx.read(2))[0],
+                                     unpack('H', pcx.read(2))[0],
+                                     unpack('H', pcx.read(2))[0])
         pcx_headers['hdpi'] = unpack('H', pcx.read(2))[0]
         pcx_headers['vdpi'] = unpack('H', pcx.read(2))[0]
 
