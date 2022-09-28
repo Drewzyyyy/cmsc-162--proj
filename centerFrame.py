@@ -11,10 +11,12 @@ class CenterFrame:
     def __init__(self, parent, right_frame):
         # Root Window
         self.parent = parent
+        self.parent.update()
+
+        print(f"{self.parent.winfo_width()} x {self.parent.winfo_height()}")
 
         # Set Screen Size
-        self.max_screen_dimensions = (self.parent.winfo_screenwidth() * 0.39, self.parent.winfo_screenheight() * 0.88)
-        self.max_image_dimensions = (self.parent.winfo_screenwidth() * 0.78, self.parent.winfo_screenheight() * 0.78)
+        self.max_screen_dimensions = (self.parent.winfo_width() * 0.8, self.parent.winfo_height() * 0.8)
 
         # Instance of right frame (metadata frame)
         self.right_frame = right_frame
@@ -47,7 +49,7 @@ class CenterFrame:
                 self.right_frame.remove_headers()
 
             # Resize image
-            image.thumbnail(self.max_image_dimensions, Image.LANCZOS)
+            image.thumbnail(self.max_screen_dimensions, Image.LANCZOS)
             image = ImageTk.PhotoImage(image)
 
         except AttributeError:
