@@ -1,6 +1,8 @@
+import struct
 import tkinter as tk
 from tkinter import filedialog
 from PIL import Image, ImageTk
+import sys
 
 # Window Config
 root = tk.Tk()
@@ -8,14 +10,75 @@ root.title('Cola PhotoEditor')
 root_icon = tk.PhotoImage(file='logo.png')
 root.iconphoto(False, root_icon)
 
-
 # Open Image in File Folders
 def open_image():
     try:
         # Open folder
-        filename = filedialog.askopenfilename(parent=root, title='Select File',
-                                              filetypes=(("JPEGs", "*.jpg"), ("PNGs", "*.png"), ("all files", "*.*")))
+        filename = filedialog.askopenfilename(parent=root, title='Select File', filetypes=(("JPEGs", "*.jpg"), ("PNGs", "*.png"), ("all files", "*.*")))
         image = Image.open(filename)
+
+        # UNPACKING HEADER FILE
+
+        # Manufacturer
+        with open(f'{filename}', 'rb') as pcx:
+            manufacturer = struct.unpack('B', pcx.read(1))[0]
+
+        # Version
+            version = struct.unpack('B', pcx.read(1))[0]
+        
+        # Encoding
+            encoding = struct.unpack('B', pcx.read(1))[0]
+        
+        # Bits per Pixel
+            bpp = struct.unpack('B', pcx.read(1))[0]
+
+        # Window - xmin
+            window_xmin = struct.unpack('H', pcx.read(2))[0]
+        
+        # Window - ymin
+            window_ymin = struct.unpack('H', pcx.read(2))[0]
+            
+        # Window - xmax
+            window_xmax = struct.unpack('H', pcx.read(2))[0]
+            
+        # Window - ymax
+            window_ymax = struct.unpack('H', pcx.read(2))[0]
+            
+        # hdpi
+            hdpi = struct.unpack('H', pcx.read(2))[0]
+            
+        # vdpi
+            vdpi = struct.unpack('H', pcx.read(2))[0]
+                    
+        # number of color planes
+            pcx.seek(65,0)
+            ncp = struct.unpack('B', pcx.read(1))[0]
+                    
+        # bytes per line
+            bpl = struct.unpack('H', pcx.read(2))[0]
+            
+        # palette info
+            palette_info = struct.unpack('H', pcx.read(2))[0]
+            
+        # horizontal screen size
+            hss = struct.unpack('H', pcx.read(2))[0]
+            
+        # vertical screen size
+            vss = struct.unpack('H', pcx.read(2))[0]
+            
+        # Printing all header values in terminal
+        # print('Zshoft .pcx(', manufacturer, ')')
+        # print(version)
+        # print(encoding)
+        # print(bpp)
+        # print(window_xmin, window_ymin, window_xmax, window_ymax)
+        # print(hdpi)
+        # print(vdpi)
+        # print(ncp)
+        # print(bpl)
+        # print(palette_info)
+        # print(hss)
+        # print(vss)
 
         # Resize image
         resized_image = image.resize((240, 240))
