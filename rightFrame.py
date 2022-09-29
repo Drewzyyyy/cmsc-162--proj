@@ -27,7 +27,10 @@ class RightFrame:
     # Add the headers to be displayed in the screen
     def insert_headers(self, img_headers):
         for idx, header in enumerate(img_headers):
-            self.header_list.insert(idx, f"{header.capitalize()}: {img_headers[header]}")
+            if idx == 0:
+                self.header_list.insert(idx, f"{header.capitalize()}: Zshoft .pcx({img_headers[header]})")
+            else:    
+                self.header_list.insert(idx, f"{header.capitalize()}: {img_headers[header]}")
 
     # Remove the headers from the list on screen
     def remove_headers(self):
