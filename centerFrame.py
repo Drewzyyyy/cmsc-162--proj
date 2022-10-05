@@ -2,6 +2,10 @@ from tkinter import Frame, \
     StringVar, \
     Label, \
     Button
+import matplotlib.pyplot as plt
+from matplotlib.figure import Figure
+from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
+import cv2
 from PIL import Image, ImageTk
 from utils import open_image, read_pcx_header
 
@@ -48,6 +52,10 @@ class CenterFrame:
             else:
                 self.right_frame.remove_headers()
 
+            # Convert image to PNG for channels algo and save to same folder as this file
+            pngImage = image.convert("RGB")
+            pngImage.save('pic.png')
+
             # Resize image
             image.thumbnail(self.max_screen_dimensions, Image.LANCZOS)
             image = ImageTk.PhotoImage(image)
@@ -63,6 +71,48 @@ class CenterFrame:
             # If child image exists then destroy it
             for widget in self.center_frame.winfo_children():
                 widget.destroy()
+
+            # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
+            genImage = cv2.imread('pic.png')
+            genImage = cv2.cvtColor(genImage, cv2.COLOR_BGR2RGB)
+
+            # Histograms
+            histogram = Figure(figsize= (5, 5), dpi=100)
+            listOfSquares = [i**2 for i in range(101)]
+            plot = histogram.add_subplot(111)
+            
+            # Histograms
+            redHist = cv2.calcHist([genImage], [0], None, [256], [0,255])
+            greenHist = cv2.calcHist([genImage], [1], None, [256], [0,255])
+            blueHist = cv2.calcHist([genImage], [2], None, [256], [0,255])
+
+            # Draw plot and show in window
+            plot.plot(redHist, color='r')
+            plot.legend(["Red Channel"])
+            can = FigureCanvasTkAgg(histogram, master=self.center_frame)
+            can.draw()
+            can.get_tk_widget().grid(column=1, row=0)
+
+            # Algo for channels
+            blue_channel = cv2.imread('pic.png')
+            blue_channel[:,:,1] = 0
+            blue_channel[:,:,2] = 0
+            cv2.imwrite('blue_pic.png', blue_channel)
+
+            green_channel = cv2.imread('pic.png')
+            green_channel[:,:,0] = 0
+            green_channel[:,:,2] = 0
+            cv2.imwrite('green_pic.png', green_channel)
+
+            red_channel = cv2.imread('pic.png')
+            red_channel[:,:,0] = 0
+            red_channel[:,:,1] = 0
+            cv2.imwrite('red_pic.png', red_channel)
+
+            # open image and convert to tk to display
+            image_open = Image.open('red_pic.png')
+            img_to_tk = ImageTk.PhotoImage(image_open)
+
 
             # Display image config
             Label(self.center_frame, text=f"File opened: {filename}", bg="grey").grid(column=0, row=1, sticky="SW")
