@@ -1,69 +1,77 @@
 from tkinter import Frame, \
     StringVar, \
-    Label, \
-    Button
-import matplotlib.pyplot as plt
-from matplotlib.figure import Figure
-from matplotlib.backends.backend_tkagg import (FigureCanvasTkAgg)
-import cv2
+    Button, \
+    Label
 from PIL import Image, ImageTk
-from utils import open_image, read_pcx_header
+from utils import open_image
+from StateManager import StateManager
 import numpy as np
 
 
 # Frame that displays the image
 class CenterFrame:
-    def __init__(self, parent, right_frame):
+    def __init__(self, parent, state_manager: StateManager):
         # Root Window
         self.parent = parent
         self.parent.update()
 
-        print(f"{self.parent.winfo_width()} x {self.parent.winfo_height()}")
+        self.state_manager: StateManager = state_manager
+
+        # COLORS
+        frame_background = "#748cab"
 
         # Set Screen Size
-        self.max_screen_dimensions = (self.parent.winfo_width() * 0.8, self.parent.winfo_height() * 0.8)
-
-        # Instance of right frame (metadata frame)
-        self.right_frame = right_frame
+        self.window_dimensions = (
+            self.parent.winfo_width() * 0.7,
+            self.parent.winfo_height() * 0.9)
 
         # Instantiate frame
-        self.center_frame = Frame(self.parent, width=self.max_screen_dimensions[0],
-                                  height=self.max_screen_dimensions[1],
-                                  bg='white')
-        self.center_frame.grid(column=0, row=0, pady=10, padx=10)
-        self.center_frame.grid_columnconfigure(0, minsize=self.max_screen_dimensions[0])
-        self.center_frame.grid_rowconfigure(0, minsize=self.max_screen_dimensions[1])
+        self.center_frame = Frame(self.parent,
+                                  width=self.window_dimensions[0],
+                                  height=self.window_dimensions[1],
+                                  bg=frame_background)
+        self.center_frame.grid(column=0, rowspan=2, pady=10, padx=10)
+        self.center_frame.grid_propagate(False)
 
         # Instantiate instructions
         self.instructions_text = StringVar()
         self.instructions_text.set("Select an image to view.")
         self.instructions = Button(self.center_frame, textvariable=self.instructions_text, font="Calibri",
                                    command=self.display_image)
-        self.instructions.grid(column=0, row=0)
+        self.instructions.place(relx=0.5, rely=0.5, anchor="center")
 
     # Open Image in File Folders
     def display_image(self):
         try:
-            image, filename = open_image()
+            # Open file dialog
+            image_path = open_image()
+            image = Image.open(image_path)
 
+            # Set image to state manager
+            self.state_manager.image = image
+            self.state_manager.image_path = image_path
+
+            # Display headers if .pcx image
             if image.format == "PCX":
-                pcx_headers = read_pcx_header(filename)
-                self.right_frame.insert_headers(pcx_headers)
-
-            else:
-                self.right_frame.remove_headers()
+                self.state_manager.read_pcx_header(image_path)
 
             # Convert image to PNG for channels algo and save to same folder as this file
-            pngImage = image.convert("RGB")
-            pngImage.save('pic.png')
+            png_image = image.convert("RGB")
+            png_image.save('./assets/pic.png')
+
+            # Set image sizes of histograms
+            right_frame_size: tuple = (int((self.parent.winfo_width() * 0.3) - 50),
+                                       int(self.parent.winfo_height() * 0.32))
+            self.state_manager.generate_histogram(right_frame_size)
 
             # Resize image
-            image.thumbnail(self.max_screen_dimensions, Image.LANCZOS)
+            image.thumbnail(self.window_dimensions, Image.LANCZOS)
             image = ImageTk.PhotoImage(image)
 
         except AttributeError:
             # Display error on failure
             self.instructions_text.set("Image upload failed.")
+            self.state_manager.status.set("Image upload failed.")
 
         else:
             # Destroy instructions label
@@ -73,53 +81,13 @@ class CenterFrame:
             for widget in self.center_frame.winfo_children():
                 widget.destroy()
 
-            # Algo for channels
-            blue_channel = cv2.imread('pic.png')
-            blue_channel[:,:,1] = 0
-            blue_channel[:,:,2] = 0
-            cv2.imwrite('blue_pic.png', blue_channel)
-
-            green_channel = cv2.imread('pic.png')
-            green_channel[:,:,0] = 0
-            green_channel[:,:,2] = 0
-            cv2.imwrite('green_pic.png', green_channel)
-
-            red_channel = cv2.imread('pic.png')
-            red_channel[:,:,0] = 0
-            red_channel[:,:,1] = 0
-            cv2.imwrite('red_pic.png', red_channel)
-
-            # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
-            # reads red picture; if you want green/blue, change file name
-            genImage = cv2.imread('red_pic.png')
-            genImage = cv2.cvtColor(genImage, cv2.COLOR_BGR2RGB)
-
-            # get sum and make 1d array
-            image_values = genImage.sum(axis=2).ravel()
-            bars, bins = np.histogram(image_values, range(257))
-
-            # Histograms
-            histogram = Figure(figsize= (5, 5), dpi=100)
-            plot = histogram.add_subplot(111)
-            
-            # Draw plot and show in window
-            plot.hist(image_values, bins=bins,color='r')
-            plot.legend(["Red Channel"])
-            can = FigureCanvasTkAgg(histogram, master=self.center_frame)
-            can.draw()
-            can.get_tk_widget().grid(column=1, row=0)
-
-
-            # open image and convert to tk to display
-            image_open = Image.open('red_pic.png')
-            img_to_tk = ImageTk.PhotoImage(image_open)
-
-
             # Display image config
-            Label(self.center_frame, text=f"File opened: {filename}", bg="grey").grid(column=0, row=1, sticky="SW")
+            image_name = image_path.split("/")[-1]
+
+            self.state_manager.status.set(f"{image_name} opened.")
 
             # Display image in place of the instructions
-            image_label = Label(self.center_frame, image=image, width=self.max_screen_dimensions[0],
-                                height=self.max_screen_dimensions[1])
+            image_label = Label(self.center_frame, image=image, width=self.window_dimensions[0],
+                                height=self.window_dimensions[1])
             image_label.image = image
             image_label.grid(column=0, row=0)
