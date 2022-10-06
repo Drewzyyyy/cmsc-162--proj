@@ -117,7 +117,7 @@ class StateManager(Subject):
         bars, bins = np.histogram(red_image_values, range(257))
 
         plt.figure()
-        plt.hist(red_image_values, bins)
+        plt.hist(red_image_values, bins, color="red")
         plt.savefig("./assets/red_hist.png")
         red_img = Image.open("./assets/red_hist.png")
         red_img.thumbnail(screen_size, Image.LANCZOS)
@@ -128,7 +128,7 @@ class StateManager(Subject):
         bars, bins = np.histogram(gen_green_image, range(257))
 
         plt.figure()
-        plt.hist(green_image_values, bins)
+        plt.hist(green_image_values, bins, color="green")
         plt.savefig("./assets/green_hist.png")
         green_img = Image.open("./assets/green_hist.png")
         green_img.thumbnail(screen_size, Image.LANCZOS)
@@ -138,7 +138,7 @@ class StateManager(Subject):
         bars, bins = np.histogram(gen_blue_image, range(257))
 
         plt.figure()
-        plt.hist(blue_image_values, bins)
+        plt.hist(blue_image_values, bins, color="blue")
         plt.savefig("./assets/blue_hist.png")
         blue_img = Image.open("./assets/blue_hist.png")
         blue_img.thumbnail(screen_size, Image.LANCZOS)
