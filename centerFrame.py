@@ -137,7 +137,7 @@ class CenterFrame:
             # black and white
             grayscale_copy = cv2.imread('./assets/grayscale.png')
 
-            threshold = 127 # user-adjusted
+            threshold = 127 # user-adjusted; gagawan ng slider
             
             (thresh, b_and_white) = cv2.threshold(grayscale_copy, threshold, 255, cv2.THRESH_BINARY)
             cv2.imwrite('./assets/b_and_w.png', b_and_white)
@@ -147,7 +147,7 @@ class CenterFrame:
             # power law gamma
             gamma_copy_img = cv2.imread('./assets/pic.png')
             
-            gamma_const = 0.4
+            gamma_const = 0.4 # gagawan ng slider
             
             gamma = np.array(255*(gamma_copy_img/255)**gamma_const, dtype='uint8')
             cv2.imwrite('./assets/gamma.png', gamma)
