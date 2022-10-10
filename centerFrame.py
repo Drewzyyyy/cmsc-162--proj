@@ -133,7 +133,16 @@ class CenterFrame:
 
             negative_img_grayscale.show()
 
+            # black and white
+            grayscale_copy = cv2.imread('./assets/grayscale.png')
+
+            threshold = 127 # user-adjusted
             
+            (thresh, b_and_white) = cv2.threshold(grayscale_copy, threshold, 255, cv2.THRESH_BINARY)
+            #cv2.imshow('B&W', b_and_white)
+            cv2.imwrite('./assets/b_and_w.png', b_and_white)
+            b_and_white = Image.open('./assets/b_and_w.png')
+            b_and_white.show()
             
 
             self.state_manager.image = grayscale_img
