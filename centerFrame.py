@@ -5,7 +5,10 @@ from tkinter import Frame, \
 from PIL import Image, ImageTk
 from utils import open_image
 from StateManager import StateManager
+from matplotlib import pyplot as plt
+import matplotlib.image as mpimg
 import numpy as np
+import cv2
 
 
 # Frame that displays the image
@@ -46,7 +49,7 @@ class CenterFrame:
             # Open file dialog
             image_path = open_image()
             image = Image.open(image_path)
-
+            
             # Set image to state manager
             self.state_manager.image = image
             self.state_manager.image_path = image_path
@@ -74,6 +77,30 @@ class CenterFrame:
             self.state_manager.status.set("Image upload failed.")
 
         else:
+            # convert to grayscale
+            grayscale = np.asarray(Image.open('./assets/pic.png'))
+            grayscale = grayscale.astype('float')
+
+            r = grayscale[:,:,0]
+            g = grayscale[:,:,1]
+            b = grayscale[:,:,2]
+
+            grayscale_img = 0.2989*r + 0.5870*g + 0.1140*b
+            
+            grayscale_img = Image.fromarray(np.uint8(grayscale_img))
+            grayscale_img.show()
+            grayscale_img.save('./assets/grayscale.png')
+
+
+            # grayscale = cv2.cvtColor(grayscale, cv2.COLOR_BGR2GRAY)
+            # cv2.imwrite('./assets/grayscale.png', grayscale)
+            # grayscale_img = Image.open('./assets/grayscale.png')
+            # grayscale_img = ImageTk.PhotoImage(grayscale_img)
+
+            self.state_manager.image = grayscale_img
+            self.state_manager.image_path = './assets/grayscale.png'
+
+
             # Destroy instructions label
             self.instructions.destroy()
 
