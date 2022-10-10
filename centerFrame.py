@@ -91,11 +91,50 @@ class CenterFrame:
             grayscale_img.show()
             grayscale_img.save('./assets/grayscale.png')
 
+            # negative for the colored image
+            negative_img_colored = Image.open('./assets/pic.png')
 
-            # grayscale = cv2.cvtColor(grayscale, cv2.COLOR_BGR2GRAY)
-            # cv2.imwrite('./assets/grayscale.png', grayscale)
-            # grayscale_img = Image.open('./assets/grayscale.png')
-            # grayscale_img = ImageTk.PhotoImage(grayscale_img)
+            for i in range(negative_img_colored.size[0]-1):
+                for j in range(negative_img_colored.size[1]-1):
+
+                    color_of_pixel = negative_img_colored.getpixel((i,j))
+
+                    if type(color_of_pixel) == tuple:
+                        red = 256 - color_of_pixel[0]
+                        green = 256 - color_of_pixel[1]
+                        blue = 256 - color_of_pixel[2]
+
+                        negative_img_colored.putpixel((i,j), (red, green, blue))
+                    else:
+                        # for grayscale
+                        color_of_pixel = 256 - color_of_pixel
+                        negative_img_colored.putpixel((i,j), color_of_pixel)
+
+            negative_img_colored.show()
+
+            #negative for the grayscale image
+            negative_img_grayscale = Image.open('./assets/grayscale.png')
+
+            for i in range(negative_img_grayscale.size[0]-1):
+                for j in range(negative_img_grayscale.size[1]-1):
+
+                    color_of_pixel = negative_img_grayscale.getpixel((i,j))
+
+                    if type(color_of_pixel) == tuple:
+                        red = 256 - color_of_pixel[0]
+                        green = 256 - color_of_pixel[1]
+                        blue = 256 - color_of_pixel[2]
+
+                        negative_img_grayscale.putpixel((i,j), (red, green, blue))
+                    else:
+                        # for grayscale
+                        color_of_pixel = 256 - color_of_pixel
+                        negative_img_grayscale.putpixel((i,j), color_of_pixel)
+
+            negative_img_grayscale.show()
+
+            
+            
 
             self.state_manager.image = grayscale_img
             self.state_manager.image_path = './assets/grayscale.png'
