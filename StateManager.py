@@ -1,9 +1,11 @@
-from tkinter import Frame, Listbox, StringVar
+from tkinter import StringVar
+from tkinter.ttk import Notebook
 import cv2
 from PIL import Image, ImageTk
 from struct import unpack
 import numpy as np
 from matplotlib import pyplot as plt
+from ImageFrame import ImageFrame
 
 
 # Custom subject class that triggers the update method of classes when variables are changed
@@ -11,10 +13,10 @@ class Subject:
     def __init__(self):
         self._observers = []
 
-    def update(self, modifier=None):
+    def notify(self, modifier=None):
         for observer in self._observers:
             if modifier != observer:
-                observer.update(self)
+                observer.notify(self)
 
     def subscribe(self, observer):
         if observer not in self._observers:
@@ -29,27 +31,28 @@ class Subject:
 
 # Stores variables and their states, if a specific variable/state changes then other classes are notified
 class StateManager(Subject):
-    def __init__(self):
+    def __init__(self, notebook: Notebook):
         Subject.__init__(self)
-        self._image: Image = None
-        self._img_path = ""
+        self._notebook = notebook
+        # self._frame_list: list[ImageFrame] = []
+        self._frame_dict: dict = {}
+        self._tab_count = 0
+
+        self._img_header_dict: dict = {}
+        self._histograms_dict: dict = {}
+        self._filters_dict: dict = {}
         self._img_headers = {}
         self._histograms = ()
+        self._filters = {}
         self.channel_images = ()
-        self.red = None
 
         self.hist_displayed = "red"
+        self.hist_changed = False
+        self.headers_changed = False
+        self.filters_changed = False
 
         self.status = StringVar()
         self.status.set("Application started.")
-
-    @property
-    def image(self):
-        return self._image
-
-    @property
-    def img_path(self):
-        return self._img_path
 
     @property
     def img_headers(self):
@@ -59,26 +62,121 @@ class StateManager(Subject):
     def histograms(self):
         return self._histograms
 
-    @image.setter
-    def image(self, image: Image):
-        self._image = image
-
-    @img_path.setter
-    def img_path(self, img_path):
-        self._img_path = img_path
+    @property
+    def filters(self):
+        return self._filters
 
     @img_headers.setter
-    def img_headers(self, img_headers):
+    def img_headers(self, img_headers: dict):
         self._img_headers = img_headers
-        self.update()
+        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
+        if self._img_header_dict[curr_tab_name] != img_headers:
+            self._img_header_dict[curr_tab_name] = img_headers
+        self.hist_changed = False
+        self.filters_changed = False
+        self.headers_changed = True
+        self.notify()
 
     @histograms.setter
     def histograms(self, histograms: tuple):
         self._histograms = histograms
-        self.update()
+        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
+        if self._histograms_dict[curr_tab_name] != histograms:
+            self._histograms_dict[curr_tab_name] = histograms
+        self.headers_changed = False
+        self.filters_changed = False
+        self.hist_changed = True
+        self.notify()
+
+    @filters.setter
+    def filters(self, filters: dict):
+        self._filters = filters
+        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
+        if self._filters_dict[curr_tab_name] != filters:
+            self._filters[curr_tab_name] = filters
+        self.headers_changed = False
+        self.hist_changed = False
+        self.filters_changed = True
+        self.notify()
+
+    # Add new tabs to image frame
+    def add_tab(self, name="New File"):
+        try:
+            if self._tab_count == 1:
+                frame: ImageFrame = self.get_current_tab()
+                # frame: ImageFrame = self._frame_list[self._notebook.index(self._notebook.select())]
+                if not frame.image_frame.winfo_ismapped():
+                    frame.image_frame = frame.create_frame()
+                    return
+            elif self._tab_count == 6:
+                self.status.set("Maximum of 6 tabs is allowed.")
+                return
+            # TODO: add loading screen
+            image_frame = ImageFrame(self)
+
+            self._tab_count += 1
+            if name == "New File":
+                name = f"{name} {self._tab_count}"
+
+            self._notebook.add(image_frame.image_frame, text=name)
+            # self._frame_list.append(image_frame)
+            self._frame_dict[name] = image_frame
+            self._histograms_dict[name] = {}
+            self._img_header_dict[name] = {}
+            self._filters_dict[name] = {}
+            self.status.set("New tab created.")
+        except IndexError:
+            raise
+
+    def remove_current_tab(self):
+        try:
+            frame_name = self._notebook.tab(self._notebook.select(), "text")
+            if self._tab_count == 1:
+                # self._frame_list[self._notebook.index(self._notebook.select())].image_frame.grid_forget()
+                self._frame_dict[frame_name].image_frame.grid_forget()
+                return
+            self._frame_dict.pop(frame_name)
+            self._histograms_dict.pop(frame_name)
+            self._img_header_dict.pop(frame_name)
+            self._filters_dict.pop(frame_name)
+            self._notebook.forget(self._notebook.index(self._notebook.select()))
+            self._tab_count -= 1
+        except IndexError:
+            raise
+
+    def get_notebook_instance(self) -> Notebook:
+        return self._notebook
+
+    # Get notebook dimensions
+    def get_tab_dimensions(self):
+        return self._notebook.winfo_reqwidth(), self._notebook.winfo_reqwidth()
+
+    # Get instance of current tab
+    def get_current_tab(self):
+        # print(self._notebook.tab(self._notebook.select(), "text"))
+        return self._frame_dict[self._notebook.tab(self._notebook.select(), "text")]
+        # return self._frame_list[self._notebook.index(self._notebook.select())]
+
+    def change_tab(self, event):
+        try:
+            curr_frame_name: ImageFrame = event.widget.tab(self._notebook.select(), "text")
+            self.img_headers = self._img_header_dict[curr_frame_name]
+            self.histograms = self._histograms_dict[curr_frame_name]
+            self.filters = self._filters_dict[curr_frame_name]
+        except KeyError:
+            self.status.set("KeyError in changing tabs.")
+
+    def rename_current_tab(self, name: str):
+        old_key = self._notebook.tab(self._notebook.select(), "text")
+        self._frame_dict[name] = self._frame_dict.pop(old_key)
+        self._histograms_dict[name] = self._histograms_dict.pop(old_key)
+        self._img_header_dict[name] = self._img_header_dict.pop(old_key)
+        self._filters_dict[name] = self._filters_dict.pop(old_key)
+        self._notebook.tab("current", text=name)
 
     # Generates a histogram for every channel and its corresponding color channel
     def generate_histogram(self, screen_size):
+        # TODO: Add loading screen
         # Algo for channels
         red_channel = cv2.imread('./assets/pic.png')
         red_channel[:, :, 0] = 0
@@ -122,7 +220,6 @@ class StateManager(Subject):
         red_img = Image.open("./assets/red_hist.png")
         red_img.thumbnail(screen_size, Image.LANCZOS)
         red_channel = ImageTk.PhotoImage(red_img)
-        self.red = red_channel
 
         green_image_values = gen_green_image.sum(axis=2).ravel()
         bars, bins = np.histogram(gen_green_image, range(257))
