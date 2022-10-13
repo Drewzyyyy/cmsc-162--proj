@@ -1,7 +1,8 @@
 from tkinter import StringVar
 from tkinter.ttk import Notebook
 import cv2
-from PIL import Image, ImageTk
+from PIL import Image
+from PIL.ImageTk import PhotoImage
 from struct import unpack
 import numpy as np
 from matplotlib import pyplot as plt
@@ -30,6 +31,47 @@ class Subject:
 
 
 # Stores variables and their states, if a specific variable/state changes then other classes are notified
+def generate_colored_negative(png_image):
+    negative_img_colored = png_image
+
+    for i in range(negative_img_colored.size[0] - 1):
+        for j in range(negative_img_colored.size[1] - 1):
+
+            color_of_pixel = negative_img_colored.getpixel((i, j))
+
+            if type(color_of_pixel) == tuple:
+                red = 256 - color_of_pixel[0]
+                green = 256 - color_of_pixel[1]
+                blue = 256 - color_of_pixel[2]
+
+                negative_img_colored.putpixel((i, j), (red, green, blue))
+            else:
+                # for grayscale
+                color_of_pixel = 256 - color_of_pixel
+                negative_img_colored.putpixel((i, j), color_of_pixel)
+
+    negative_img_colored.save('./assets/colored-negative.png')
+    return PhotoImage(negative_img_colored)
+
+
+# Generate a black and white image based on the image uploaded
+def generate_bw(threshold: int = 127):
+    grayscale_copy = cv2.imread('./assets/grayscale.png')
+
+    (thresh, b_and_white) = cv2.threshold(grayscale_copy, threshold, 255, cv2.THRESH_BINARY)
+    cv2.imwrite('./assets/b_and_w.png', b_and_white)
+    return PhotoImage(Image.open('./assets/b_and_w.png'))
+
+
+# Generate an image with low gamma filter based on the image uploaded
+def generate_low_gamma(gamma_const: float = 0.4):
+    gamma_copy_img = cv2.imread('./assets/pic.png')
+
+    gamma = np.array(255 * (gamma_copy_img / 255) ** gamma_const, dtype='uint8')
+    cv2.imwrite('./assets/gamma.png', gamma)
+    return PhotoImage(Image.open('./assets/gamma.png'))
+
+
 class StateManager(Subject):
     def __init__(self, notebook: Notebook):
         Subject.__init__(self)
@@ -53,6 +95,8 @@ class StateManager(Subject):
 
         self.status = StringVar()
         self.status.set("Application started.")
+
+        self.curr_grayscale: Image = None
 
     @property
     def img_headers(self):
@@ -93,7 +137,7 @@ class StateManager(Subject):
         self._filters = filters
         curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
         if self._filters_dict[curr_tab_name] != filters:
-            self._filters[curr_tab_name] = filters
+            self._filters_dict[curr_tab_name] = filters
         self.headers_changed = False
         self.hist_changed = False
         self.filters_changed = True
@@ -128,6 +172,7 @@ class StateManager(Subject):
         except IndexError:
             raise
 
+    # Remove current image tab
     def remove_current_tab(self):
         try:
             frame_name = self._notebook.tab(self._notebook.select(), "text")
@@ -144,6 +189,7 @@ class StateManager(Subject):
         except IndexError:
             raise
 
+    # Return an instance of the current notebook instance
     def get_notebook_instance(self) -> Notebook:
         return self._notebook
 
@@ -157,6 +203,7 @@ class StateManager(Subject):
         return self._frame_dict[self._notebook.tab(self._notebook.select(), "text")]
         # return self._frame_list[self._notebook.index(self._notebook.select())]
 
+    # Changes the UI based on the current tab
     def change_tab(self, event):
         try:
             curr_frame_name: ImageFrame = event.widget.tab(self._notebook.select(), "text")
@@ -166,6 +213,7 @@ class StateManager(Subject):
         except KeyError:
             self.status.set("KeyError in changing tabs.")
 
+    # Renames the current tab in the stored dictionary
     def rename_current_tab(self, name: str):
         old_key = self._notebook.tab(self._notebook.select(), "text")
         self._frame_dict[name] = self._frame_dict.pop(old_key)
@@ -184,7 +232,7 @@ class StateManager(Subject):
         cv2.imwrite('./assets/red_channel.png', red_channel)
         red_channel_img = Image.open('./assets/red_channel.png')
         red_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        red_channel_img = ImageTk.PhotoImage(red_channel_img)
+        red_channel_img = PhotoImage(red_channel_img)
 
         green_channel = cv2.imread('./assets/pic.png')
         green_channel[:, :, 0] = 0
@@ -192,7 +240,7 @@ class StateManager(Subject):
         cv2.imwrite('./assets/green_channel.png', green_channel)
         green_channel_img = Image.open('./assets/green_channel.png')
         green_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        green_channel_img = ImageTk.PhotoImage(green_channel_img)
+        green_channel_img = PhotoImage(green_channel_img)
 
         blue_channel = cv2.imread('./assets/pic.png')
         blue_channel[:, :, 1] = 0
@@ -200,7 +248,7 @@ class StateManager(Subject):
         cv2.imwrite('./assets/blue_channel.png', blue_channel)
         blue_channel_img = Image.open('./assets/blue_channel.png')
         blue_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        blue_channel_img = ImageTk.PhotoImage(blue_channel_img)
+        blue_channel_img = PhotoImage(blue_channel_img)
 
         self.channel_images = (red_channel_img, green_channel_img, blue_channel_img)
 
@@ -219,7 +267,7 @@ class StateManager(Subject):
         plt.savefig("./assets/red_hist.png")
         red_img = Image.open("./assets/red_hist.png")
         red_img.thumbnail(screen_size, Image.LANCZOS)
-        red_channel = ImageTk.PhotoImage(red_img)
+        red_channel = PhotoImage(red_img)
 
         green_image_values = gen_green_image.sum(axis=2).ravel()
         bars, bins = np.histogram(gen_green_image, range(257))
@@ -229,7 +277,7 @@ class StateManager(Subject):
         plt.savefig("./assets/green_hist.png")
         green_img = Image.open("./assets/green_hist.png")
         green_img.thumbnail(screen_size, Image.LANCZOS)
-        green_channel = ImageTk.PhotoImage(green_img)
+        green_channel = PhotoImage(green_img)
 
         blue_image_values = gen_blue_image.sum(axis=2).ravel()
         bars, bins = np.histogram(gen_blue_image, range(257))
@@ -239,7 +287,7 @@ class StateManager(Subject):
         plt.savefig("./assets/blue_hist.png")
         blue_img = Image.open("./assets/blue_hist.png")
         blue_img.thumbnail(screen_size, Image.LANCZOS)
-        blue_channel = ImageTk.PhotoImage(blue_img)
+        blue_channel = PhotoImage(blue_img)
 
         self.histograms = (red_channel, green_channel, blue_channel)
 
@@ -266,3 +314,71 @@ class StateManager(Subject):
             img_headers['hss'] = unpack('H', pcx.read(2))[0]
             img_headers['vss'] = unpack('H', pcx.read(2))[0]
         self.img_headers = img_headers
+
+    # Generate all image filters
+    def generate_all_filters(self, png_image):
+        # self.threading_queue = Queue(5)
+
+        # convert to grayscale
+        grayscale = self.generate_grayscale(png_image)
+
+        # negative for the colored image
+        colored_negative = generate_colored_negative(png_image)
+
+        # negative for the grayscale image
+        colored_grayscale = self.generate_negative_grayscale()
+
+        # black and white
+        b_w = generate_bw()
+
+        # power law gamma
+        low_gamma = generate_low_gamma()
+
+        self.filters = {
+            "Grayscale": grayscale,
+            "Colored Negative": colored_negative,
+            "Grayscale Negative": colored_grayscale,
+            "Black and White": b_w,
+            "Low Gamma": low_gamma,
+        }
+
+        # Generate an image with a grayscale filter
+    def generate_grayscale(self, png_image):
+        grayscale = np.asarray(png_image)
+        grayscale = grayscale.astype('float')
+
+        red = grayscale[:, :, 0]
+        green = grayscale[:, :, 1]
+        blue = grayscale[:, :, 2]
+
+        grayscale_img = 0.2989 * red + 0.5870 * green + 0.1140 * blue
+
+        grayscale_img = Image.fromarray(np.uint8(grayscale_img))
+
+        grayscale_img.save('./assets/grayscale.png')
+        self.curr_grayscale = grayscale_img
+        res = PhotoImage(grayscale_img)
+        return res
+
+    # Generate a negative of the image grayscale
+    def generate_negative_grayscale(self):
+        negative_img_grayscale = self.curr_grayscale
+
+        for i in range(negative_img_grayscale.size[0] - 1):
+            for j in range(negative_img_grayscale.size[1] - 1):
+
+                color_of_pixel = negative_img_grayscale.getpixel((i, j))
+
+                if type(color_of_pixel) == tuple:
+                    red = 256 - color_of_pixel[0]
+                    green = 256 - color_of_pixel[1]
+                    blue = 256 - color_of_pixel[2]
+
+                    negative_img_grayscale.putpixel((i, j), (red, green, blue))
+                else:
+                    # for grayscale
+                    color_of_pixel = 256 - color_of_pixel
+                    negative_img_grayscale.putpixel((i, j), color_of_pixel)
+
+        negative_img_grayscale.save('./assets/grayscale-negative.png')
+        return PhotoImage(Image.open('./assets/grayscale-negative.png'))

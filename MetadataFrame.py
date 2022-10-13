@@ -23,19 +23,21 @@ class MetadataFrame:
             "height": self.window_dimensions[1]
         }
 
+        # Instantiate tabs for metadata
         self.metadata_tabs = Notebook(self.parent,
                                       width=self.window_dimensions[0],
                                       height=int(self.window_dimensions[1] * 0.9))
         self.metadata_tabs.update_idletasks()
 
-        # Instantiate upper right frame
+        # Instantiate header frame tab
         self.header_frame = HeaderFrame(self.metadata_tabs, child_configs)
         self.metadata_tabs.add(self.header_frame, text="Headers")
 
-        # Instantiate lower right frame
+        # Instantiate histogram frame tab
         self.histogram_frame = HistogramFrame(self.metadata_tabs, child_configs)
         self.metadata_tabs.add(self.histogram_frame, text="Histograms")
 
+        # Instantiate filters frame tab
         self.filters_frame = FiltersFrame(self.metadata_tabs, child_configs)
         self.metadata_tabs.add(self.filters_frame, text="Filters")
 
