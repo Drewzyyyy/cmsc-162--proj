@@ -70,7 +70,7 @@ class FiltersFrame(Frame):
                                       text="Gamma Const")
             self.filter_scale = Scale(self,
                                       from_=0,
-                                      to=1,
+                                      to=100,
                                       resolution=0.01,
                                       orient="horizontal",
                                       length=self.winfo_reqwidth(),
