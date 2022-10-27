@@ -1,3 +1,4 @@
+from random import random
 from tkinter import StringVar
 from tkinter.ttk import Notebook
 import cv2
@@ -7,6 +8,7 @@ from struct import unpack
 import numpy as np
 from matplotlib import pyplot as plt
 from ImageFrame import ImageFrame
+import random
 
 
 # Custom subject class that triggers the update method of classes when variables are changed
@@ -342,6 +344,9 @@ class StateManager(Subject):
             "Low Gamma": low_gamma,
         }
 
+        # salt and pepper
+        salt_and_pepper = self.salt_and_pepper()
+
         # average
         average = self.generate_averaging_filter()
 
@@ -411,6 +416,31 @@ class StateManager(Subject):
         new_img = new_img.astype(np.uint8)
         cv2.imwrite('./assets/average.png', new_img)
         cv2.imshow('averaging filter', new_img)
+
+    # DREW: toggle to apply filter on salt and pepper image or purely grayscale lang
+    def salt_and_pepper(self):
+        temp_img = cv2.imread('./assets/grayscale.png', 0)
+
+        rows, cols = temp_img.shape
+
+        num_pix = random.randint(300, 10000)
+
+        # Change to white
+        for i in range(num_pix):
+            y = random.randint(0, rows-1)
+            x = random.randint(0, cols-1)
+            temp_img[y][x] = 255
+
+        # Change to black
+        num_pix = random.randint(300, 10000)
+        for i in range(num_pix):
+            y = random.randint(0, rows-1)
+            x = random.randint(0, cols-1)
+            temp_img[y][x] = 0
+
+        cv2.imwrite('./assets/salt_and_pepper.png', temp_img)
+        cv2.imshow('salt and pepper', temp_img)
+
 
     def median_filtering(self):
         cv2.imread('./assets/pic.png', 0)
