@@ -350,6 +350,9 @@ class StateManager(Subject):
         # average
         average = self.generate_averaging_filter()
 
+        # median
+        median = self.median_filtering()
+
         # Generate an image with a grayscale filter
     def generate_grayscale(self, png_image):
         grayscale = np.asarray(png_image)
@@ -393,16 +396,11 @@ class StateManager(Subject):
 
     def generate_averaging_filter(self):
         temp_img = cv2.imread('./assets/grayscale.png', 0)
-        
-        # print(temp_img.shape)
 
-        a,b = temp_img.shape
+        a,b = temp_img.shape # rows & columns
 
         mask = np.array([[1,2,1],[2,4,2],[1,2,1]])
         mask = mask/16
-
-        # print(mask[0,0])
-        # print(mask[1,1])
 
         new_img = np.zeros([a,b])
 
@@ -417,7 +415,7 @@ class StateManager(Subject):
         cv2.imwrite('./assets/average.png', new_img)
         cv2.imshow('averaging filter', new_img)
 
-    # DREW: toggle to apply filter on salt and pepper image or purely grayscale lang
+    # DREW: toggle to apply filter on salt and pepper image or purely grayscale lang for average, median
     def salt_and_pepper(self):
         temp_img = cv2.imread('./assets/grayscale.png', 0)
 
@@ -443,6 +441,26 @@ class StateManager(Subject):
 
 
     def median_filtering(self):
-        cv2.imread('./assets/pic.png', 0)
+        image = cv2.imread('./assets/grayscale.png', 0)
+        a,b = image.shape # rows & columns
+        
+        new_img = np.zeros([a,b])
 
+        for i in range(1, a-1):
+            for j in range(1, b-1):
+                tmp = [image[i-1,j-1], 
+                    image[i-1,j],
+                    image[i-1,j+1],
+                    image[i,j-1],
+                    image[i,j],
+                    image[i,j+1],
+                    image[i+1, j-1],
+                    image[i+1,j],
+                    image[i+1,j+1]]
 
+                tmp = sorted(tmp)
+                new_img[i,j] = tmp[4]
+
+        new_img = new_img.astype(np.uint8)
+        cv2.imwrite('./assets/median.png', new_img)
+        cv2.imshow('median', new_img)
