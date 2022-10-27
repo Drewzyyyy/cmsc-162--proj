@@ -60,7 +60,8 @@ def generate_colored_negative(png_image):
 def generate_bw(threshold: int = 127):
     grayscale_copy = cv2.imread('./assets/grayscale.png')
 
-    (thresh, b_and_white) = cv2.threshold(grayscale_copy, threshold, 255, cv2.THRESH_BINARY)
+    (thresh, b_and_white) = cv2.threshold(
+        grayscale_copy, threshold, 255, cv2.THRESH_BINARY)
     cv2.imwrite('./assets/b_and_w.png', b_and_white)
     return PhotoImage(Image.open('./assets/b_and_w.png'))
 
@@ -69,7 +70,8 @@ def generate_bw(threshold: int = 127):
 def generate_low_gamma(gamma_const: float = 0.4):
     gamma_copy_img = cv2.imread('./assets/pic.png')
 
-    gamma = np.array(255 * (gamma_copy_img / 255) ** gamma_const, dtype='uint8')
+    gamma = np.array(255 * (gamma_copy_img / 255)
+                     ** gamma_const, dtype='uint8')
     cv2.imwrite('./assets/gamma.png', gamma)
     return PhotoImage(Image.open('./assets/gamma.png'))
 
@@ -186,7 +188,8 @@ class StateManager(Subject):
             self._histograms_dict.pop(frame_name)
             self._img_header_dict.pop(frame_name)
             self._filters_dict.pop(frame_name)
-            self._notebook.forget(self._notebook.index(self._notebook.select()))
+            self._notebook.forget(
+                self._notebook.index(self._notebook.select()))
             self._tab_count -= 1
         except IndexError:
             raise
@@ -208,7 +211,8 @@ class StateManager(Subject):
     # Changes the UI based on the current tab
     def change_tab(self, event):
         try:
-            curr_frame_name: ImageFrame = event.widget.tab(self._notebook.select(), "text")
+            curr_frame_name: ImageFrame = event.widget.tab(
+                self._notebook.select(), "text")
             self.img_headers = self._img_header_dict[curr_frame_name]
             self.histograms = self._histograms_dict[curr_frame_name]
             self.filters = self._filters_dict[curr_frame_name]
@@ -252,7 +256,8 @@ class StateManager(Subject):
         blue_channel_img.thumbnail(screen_size, Image.LANCZOS)
         blue_channel_img = PhotoImage(blue_channel_img)
 
-        self.channel_images = (red_channel_img, green_channel_img, blue_channel_img)
+        self.channel_images = (
+            red_channel_img, green_channel_img, blue_channel_img)
 
         # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
         # reads red picture; if you want green/blue, change file name
@@ -353,6 +358,9 @@ class StateManager(Subject):
         # median
         median = self.median_filtering()
 
+        # high pass
+        high_pass = self.highpass_laplacian()
+
         # Generate an image with a grayscale filter
     def generate_grayscale(self, png_image):
         grayscale = np.asarray(png_image)
@@ -397,19 +405,19 @@ class StateManager(Subject):
     def generate_averaging_filter(self):
         temp_img = cv2.imread('./assets/grayscale.png', 0)
 
-        a,b = temp_img.shape # rows & columns
+        a, b = temp_img.shape  # rows & columns
 
-        mask = np.array([[1,2,1],[2,4,2],[1,2,1]])
+        mask = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]])
         mask = mask/16
 
-        new_img = np.zeros([a,b])
+        new_img = np.zeros([a, b])
 
         for i in range(1, a-1):
             for j in range(1, b-1):
-                tmp = temp_img[i-1, j-1]*mask[0,0]+temp_img[i-1,j]*mask[0,1]+temp_img[i-1,j+1]*mask[0,2]+temp_img[i,j-1]*mask[1,0]+temp_img[i,j]*mask[1,1]+temp_img[i,j+1]*mask[1,2]+temp_img[i+1,j-1]*mask[2,0]+temp_img[i+1,j]*mask[2,1]+temp_img[i+1,j+1]*mask[2,2]
-
+                tmp = temp_img[i-1, j-1]*mask[0, 0]+temp_img[i-1, j]*mask[0, 1]+temp_img[i-1, j+1]*mask[0, 2]+temp_img[i, j-1]*mask[1, 0]+temp_img[i,
+                                                                                                                                                   j]*mask[1, 1]+temp_img[i, j+1]*mask[1, 2]+temp_img[i+1, j-1]*mask[2, 0]+temp_img[i+1, j]*mask[2, 1]+temp_img[i+1, j+1]*mask[2, 2]
                 # print(tmp)
-                new_img[i,j] = tmp
+                new_img[i, j] = tmp
 
         new_img = new_img.astype(np.uint8)
         cv2.imwrite('./assets/average.png', new_img)
@@ -439,28 +447,42 @@ class StateManager(Subject):
         cv2.imwrite('./assets/salt_and_pepper.png', temp_img)
         cv2.imshow('salt and pepper', temp_img)
 
-
     def median_filtering(self):
         image = cv2.imread('./assets/grayscale.png', 0)
-        a,b = image.shape # rows & columns
-        
-        new_img = np.zeros([a,b])
+        a, b = image.shape  # rows & columns
+
+        new_img = np.zeros([a, b])
 
         for i in range(1, a-1):
             for j in range(1, b-1):
-                tmp = [image[i-1,j-1], 
-                    image[i-1,j],
-                    image[i-1,j+1],
-                    image[i,j-1],
-                    image[i,j],
-                    image[i,j+1],
-                    image[i+1, j-1],
-                    image[i+1,j],
-                    image[i+1,j+1]]
+                tmp = [image[i-1, j-1],
+                       image[i-1, j],
+                       image[i-1, j+1],
+                       image[i, j-1],
+                       image[i, j],
+                       image[i, j+1],
+                       image[i+1, j-1],
+                       image[i+1, j],
+                       image[i+1, j+1]]
 
                 tmp = sorted(tmp)
-                new_img[i,j] = tmp[4]
+                new_img[i, j] = tmp[4]
 
         new_img = new_img.astype(np.uint8)
         cv2.imwrite('./assets/median.png', new_img)
         cv2.imshow('median', new_img)
+
+    def highpass_laplacian(self):
+        image = cv2.imread('./assets/salt_and_pepper.png', 0)
+
+        filt = np.array([[0, 1, 0],
+                          [1, -4, 1],
+                          [0, 1, 0]])
+
+        filtered_img = cv2.filter2D(src=image, ddepth=-1, kernel=filt)
+
+        filt2 = np.array(image + (-1*filtered_img), dtype='uint8')
+        
+        cv2.imwrite('./assets/highpass.png', filt2)
+
+        cv2.imshow('highpass', filt2)
