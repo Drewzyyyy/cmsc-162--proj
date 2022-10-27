@@ -2,7 +2,7 @@ from random import random
 from tkinter import StringVar
 from tkinter.ttk import Notebook
 import cv2
-from PIL import Image
+from PIL import Image, ImageFilter
 from PIL.ImageTk import PhotoImage
 from struct import unpack
 import numpy as np
@@ -361,6 +361,12 @@ class StateManager(Subject):
         # high pass
         high_pass = self.highpass_laplacian()
 
+        # unmask
+        unmasked = self.unmask()
+
+        # highboost
+        highboost = self.highboost()
+
         # Generate an image with a grayscale filter
     def generate_grayscale(self, png_image):
         grayscale = np.asarray(png_image)
@@ -403,9 +409,9 @@ class StateManager(Subject):
         return PhotoImage(Image.open('./assets/grayscale-negative.png'))
 
     def generate_averaging_filter(self):
-        temp_img = cv2.imread('./assets/grayscale.png', 0)
+        temp_img = cv2.imread('./assets/pic.png', 0)
 
-        a, b = temp_img.shape  # rows & columns
+        a, b  = temp_img.shape  # rows & columns
 
         mask = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]])
         mask = mask/16
@@ -425,7 +431,7 @@ class StateManager(Subject):
 
     # DREW: toggle to apply filter on salt and pepper image or purely grayscale lang for average, median
     def salt_and_pepper(self):
-        temp_img = cv2.imread('./assets/grayscale.png', 0)
+        temp_img = cv2.imread('./assets/pic.png', 0)
 
         rows, cols = temp_img.shape
 
@@ -448,7 +454,7 @@ class StateManager(Subject):
         cv2.imshow('salt and pepper', temp_img)
 
     def median_filtering(self):
-        image = cv2.imread('./assets/grayscale.png', 0)
+        image = cv2.imread('./assets/pic.png', 0)
         a, b = image.shape  # rows & columns
 
         new_img = np.zeros([a, b])
@@ -472,8 +478,9 @@ class StateManager(Subject):
         cv2.imwrite('./assets/median.png', new_img)
         cv2.imshow('median', new_img)
 
+    # Spatial domain laplacian
     def highpass_laplacian(self):
-        image = cv2.imread('./assets/salt_and_pepper.png', 0)
+        image = cv2.imread('./assets/pic.png', 0)
 
         filt = np.array([[0, 1, 0],
                           [1, -4, 1],
@@ -481,8 +488,41 @@ class StateManager(Subject):
 
         filtered_img = cv2.filter2D(src=image, ddepth=-1, kernel=filt)
 
-        filt2 = np.array(image + (-1*filtered_img), dtype='uint8')
-        
-        cv2.imwrite('./assets/highpass.png', filt2)
+        filt2 = image + (-1*filtered_img)
 
-        cv2.imshow('highpass', filt2)
+        clip = np.array(np.clip(filt2, 0, 255), dtype='uint8')
+        
+        cv2.imwrite('./assets/highpass.png', clip)
+
+        print(clip)
+
+        cv2.imshow('highpass', clip)
+
+    def unmask(self):
+        img = cv2.imread('./assets/pic.png', 0)
+        img = img / 255
+
+        blurred_img = cv2.GaussianBlur(img, (31,31), cv2.BORDER_DEFAULT)
+
+        mask = img -  blurred_img
+        final = img + mask
+        final = np.clip(final, 0, 255)
+        
+        cv2.imshow('unsharp masking', final)
+
+    def highboost(self):
+        img = cv2.imread('./assets/pic.png', 0)
+        img = img / 255
+
+        blurred_img = cv2.GaussianBlur(img, (31,31), cv2.BORDER_DEFAULT)
+
+        mask = img -  blurred_img
+        amplify_param = 5
+        final = img + amplify_param*mask
+        final = np.clip(final, 0, 255)
+        
+        cv2.imshow('highboost', final)
+        
+
+        
+
