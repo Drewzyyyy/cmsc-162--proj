@@ -342,6 +342,9 @@ class StateManager(Subject):
             "Low Gamma": low_gamma,
         }
 
+        # average
+        average = self.generate_averaging_filter()
+
         # Generate an image with a grayscale filter
     def generate_grayscale(self, png_image):
         grayscale = np.asarray(png_image)
@@ -382,3 +385,34 @@ class StateManager(Subject):
 
         negative_img_grayscale.save('./assets/grayscale-negative.png')
         return PhotoImage(Image.open('./assets/grayscale-negative.png'))
+
+    def generate_averaging_filter(self):
+        temp_img = cv2.imread('./assets/grayscale.png', 0)
+        
+        # print(temp_img.shape)
+
+        a,b = temp_img.shape
+
+        mask = np.array([[1,2,1],[2,4,2],[1,2,1]])
+        mask = mask/16
+
+        # print(mask[0,0])
+        # print(mask[1,1])
+
+        new_img = np.zeros([a,b])
+
+        for i in range(1, a-1):
+            for j in range(1, b-1):
+                tmp = temp_img[i-1, j-1]*mask[0,0]+temp_img[i-1,j]*mask[0,1]+temp_img[i-1,j+1]*mask[0,2]+temp_img[i,j-1]*mask[1,0]+temp_img[i,j]*mask[1,1]+temp_img[i,j+1]*mask[1,2]+temp_img[i+1,j-1]*mask[2,0]+temp_img[i+1,j]*mask[2,1]+temp_img[i+1,j+1]*mask[2,2]
+
+                # print(tmp)
+                new_img[i,j] = tmp
+
+        new_img = new_img.astype(np.uint8)
+        cv2.imwrite('./assets/average.png', new_img)
+        cv2.imshow('averaging filter', new_img)
+
+    def median_filtering(self):
+        cv2.imread('./assets/pic.png', 0)
+
+
