@@ -361,11 +361,14 @@ class StateManager(Subject):
         # high pass
         high_pass = self.highpass_laplacian()
 
-        # unmask
-        unmasked = self.unmask()
+        # unsharp mask
+        unmasked = self.unsharp_masking()
 
         # highboost
         highboost = self.highboost()
+
+        # sobel
+        img_sobel = self.gradient_sobel()
 
         # Generate an image with a grayscale filter
     def generate_grayscale(self, png_image):
@@ -411,7 +414,7 @@ class StateManager(Subject):
     def generate_averaging_filter(self):
         temp_img = cv2.imread('./assets/pic.png', 0)
 
-        a, b  = temp_img.shape  # rows & columns
+        a, b = temp_img.shape  # rows & columns
 
         mask = np.array([[1, 2, 1], [2, 4, 2], [1, 2, 1]])
         mask = mask/16
@@ -420,8 +423,7 @@ class StateManager(Subject):
 
         for i in range(1, a-1):
             for j in range(1, b-1):
-                tmp = temp_img[i-1, j-1]*mask[0, 0]+temp_img[i-1, j]*mask[0, 1]+temp_img[i-1, j+1]*mask[0, 2]+temp_img[i, j-1]*mask[1, 0]+temp_img[i,
-                                                                                                                                                   j]*mask[1, 1]+temp_img[i, j+1]*mask[1, 2]+temp_img[i+1, j-1]*mask[2, 0]+temp_img[i+1, j]*mask[2, 1]+temp_img[i+1, j+1]*mask[2, 2]
+                tmp = temp_img[i-1, j-1]*mask[0, 0]+temp_img[i-1, j]*mask[0, 1]+temp_img[i-1, j+1]*mask[0, 2]+temp_img[i, j-1]*mask[1, 0]+temp_img[i,j]*mask[1, 1]+temp_img[i, j+1]*mask[1, 2]+temp_img[i+1, j-1]*mask[2, 0]+temp_img[i+1, j]*mask[2, 1]+temp_img[i+1, j+1]*mask[2, 2]
                 # print(tmp)
                 new_img[i, j] = tmp
 
@@ -483,46 +485,58 @@ class StateManager(Subject):
         image = cv2.imread('./assets/pic.png', 0)
 
         filt = np.array([[0, 1, 0],
-                          [1, -4, 1],
-                          [0, 1, 0]])
+                         [1, -4, 1],
+                         [0, 1, 0]])
 
         filtered_img = cv2.filter2D(src=image, ddepth=-1, kernel=filt)
 
         filt2 = image + (-1*filtered_img)
 
         clip = np.array(np.clip(filt2, 0, 255), dtype='uint8')
-        
-        cv2.imwrite('./assets/highpass.png', clip)
 
-        print(clip)
+        cv2.imwrite('./assets/highpass.png', clip)
 
         cv2.imshow('highpass', clip)
 
-    def unmask(self):
+    def unsharp_masking(self):
         img = cv2.imread('./assets/pic.png', 0)
         img = img / 255
 
-        blurred_img = cv2.GaussianBlur(img, (31,31), cv2.BORDER_DEFAULT)
+        blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT)
 
-        mask = img -  blurred_img
+        mask = img - blurred_img
         final = img + mask
         final = np.clip(final, 0, 255)
-        
+
         cv2.imshow('unsharp masking', final)
 
     def highboost(self):
         img = cv2.imread('./assets/pic.png', 0)
         img = img / 255
 
-        blurred_img = cv2.GaussianBlur(img, (31,31), cv2.BORDER_DEFAULT)
+        blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT)
 
-        mask = img -  blurred_img
+        mask = img - blurred_img
         amplify_param = 5
         final = img + amplify_param*mask
         final = np.clip(final, 0, 255)
-        
+
         cv2.imshow('highboost', final)
-        
 
-        
+    def gradient_sobel(self):
+        img = cv2.imread('./assets/pic.png', 0)
 
+        x_sobel = np.array(([[-1, -2, -1],
+                             [0, 0, 0],
+                             [1, 2, 1]]))
+
+        y_sobel = np.array(([[-1, 0, 1],
+                             [-2, 0, 2],
+                             [-1, 0, 1]]))
+
+        x = cv2.filter2D(src=img, ddepth=-1, kernel=x_sobel)
+        y = cv2.filter2D(src=img, ddepth=-1, kernel=y_sobel)
+        sum = np.array(x + y, dtype='uint8')
+        # clarify w/ jc if this is clipped + background???
+
+        cv2.imshow('sobel', sum)
