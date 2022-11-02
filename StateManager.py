@@ -9,6 +9,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from ImageFrame import ImageFrame
 import random
+import math
 
 
 # Custom subject class that triggers the update method of classes when variables are changed
@@ -526,17 +527,34 @@ class StateManager(Subject):
     def gradient_sobel(self):
         img = cv2.imread('./assets/pic.png', 0)
 
-        x_sobel = np.array(([[-1, -2, -1],
+        [row, col] = np.shape(img)
+        final_img = np.zeros(shape=(row,col))
+        x_grad = np.zeros(shape=(row,col))
+        y_grad = np.zeros(shape=(row,col))
+
+        y_sobel = np.array(([[-1, -2, -1],
                              [0, 0, 0],
                              [1, 2, 1]]))
 
-        y_sobel = np.array(([[-1, 0, 1],
+        x_sobel = np.array(([[-1, 0, 1],
                              [-2, 0, 2],
                              [-1, 0, 1]]))
 
-        x = cv2.filter2D(src=img, ddepth=-1, kernel=x_sobel)
-        y = cv2.filter2D(src=img, ddepth=-1, kernel=y_sobel)
-        sum = np.array(x + y, dtype='uint8')
-        # clarify w/ jc if this is clipped + background???
+        for i in range(row-2):
+            for j in range(col-2):
+                x_partial = np.sum(np.multiply(x_sobel, img[i:i+3, j:j+3])) # compute partial derivative of x
+                y_partial = np.sum(np.multiply(y_sobel, img[i:i+3, j:j+3])) # compute partial derivative of y
+                x_grad[i+1,j+1] = x_partial
+                y_grad[i+1,j+1] = y_partial
+                final_img[i+1,j+1] = np.sqrt(x_partial**2 + y_partial**2)
 
-        cv2.imshow('sobel', sum)
+        plt.imsave('./assets/sobel.png', final_img, cmap='gray')
+        plt.imsave('./assets/sobel_x.png', x_grad, cmap='gray')
+        plt.imsave('./assets/sobel_y.png', y_grad, cmap='gray')
+
+        fin = cv2.imread('./assets/sobel.png')
+        x = cv2.imread('./assets/sobel_x.png')
+        y = cv2.imread('./assets/sobel_y.png')
+        cv2.imshow('sobel', fin)
+        cv2.imshow('sobel-x', x)
+        cv2.imshow('sobel-y', y)
