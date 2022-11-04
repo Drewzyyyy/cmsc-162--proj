@@ -22,7 +22,7 @@ class FiltersFrame(Frame):
         self.current_more_filter = StringVar(value=self.more_filter_values[0])
 
         self.filter_options: OptionMenu = self.create_option_menu()
-        self.more_filters: OptionMenu = self.create_option_menu()
+        self.more_filters: OptionMenu | None = None
 
         self.filters: dict = {}
         self.grayscale_filters: dict = {}
@@ -39,19 +39,20 @@ class FiltersFrame(Frame):
             if states.filters_changed:
                 if not states.filters:
                     self.filter_options.grid_forget()
-                    self.more_filters.grid_forget()
                     self.filtered_image.grid_forget()
                     self.filter_label.grid_forget()
                     self.filter_scale.grid_forget()
                     self.filters = {}
                     self.grayscale_filters = {}
                     self.salt_and_pepper_filters = {}
+                    if self.more_filters is not None:
+                        self.more_filters.grid_forget()
                     return
                 self.filters = states.filters.copy()
                 self.values = [*self.filters.keys()]
                 self.filter_options = self.create_option_menu(self.values)
                 self.grayscale_filters = generate_more_filters('Grayscale')
-                self.grayscale_filters = generate_more_filters('Salt and Pepper')
+                self.salt_and_pepper_filters = generate_more_filters('Salt and Pepper')
                 self.update_idletasks()
                 self.set_image("Grayscale")
         except ValueError:
@@ -76,18 +77,31 @@ class FiltersFrame(Frame):
 
     def set_filter_image(self, image_filter):
         if image_filter == "None":
+            value = self.current_filter.get()
+            self.filtered_image = Label(self,
+                                        image=self.filters[value],
+                                        width=self.winfo_reqwidth(),
+                                        height=int(self.winfo_reqheight() * 0.4))
+            self.filtered_image.image = self.filters[value]
+
+            self.filtered_image.grid(column=0, row=1)
+            self.filtered_image.grid_propagate(False)
+
             return
-        self.filtered_image.grid_forget()
-        filter_dict: dict = self.grayscale_filters.copy() if self.current_filter == 'Grayscale' else \
-            self.salt_and_pepper_filters.copy()
-        self.filtered_image = Label(self,
-                                    image=filter_dict[image_filter],
-                                    width=self.winfo_reqwidth(),
-                                    height=int(self.winfo_reqheight() * 0.4))
-        self.filtered_image.image = filter_dict[image_filter]
-        self.filter_label = Label(self,
-                                  text="More Filters")
-        self.current_more_filter.set(image_filter)
+        else:
+            self.filtered_image.grid_forget()
+            filter_dict: dict = self.grayscale_filters.copy() if self.current_filter.get() == 'Grayscale' else \
+                self.salt_and_pepper_filters.copy()
+            self.filtered_image = Label(self,
+                                        image=filter_dict[image_filter],
+                                        width=self.winfo_reqwidth(),
+                                        height=int(self.winfo_reqheight() * 0.4))
+            self.filtered_image.image = filter_dict[image_filter]
+            self.filter_label = Label(self,
+                                      text="More Filters")
+            self.current_more_filter.set(image_filter)
+        self.filtered_image.grid(column=0, row=1)
+        self.filtered_image.grid_propagate(False)
 
     # Set the filtered image displayed on screen
     def set_image(self, image_filter):
@@ -95,6 +109,8 @@ class FiltersFrame(Frame):
         self.filtered_image.grid_forget()
         self.filter_label.grid_forget()
         self.filter_scale.grid_forget()
+        if self.more_filters is not None:
+            self.more_filters.grid_forget()
         self.filtered_image = Label(self,
                                     image=self.filters[image_filter],
                                     width=self.winfo_reqwidth(),
@@ -130,10 +146,9 @@ class FiltersFrame(Frame):
             self.filter_label.grid(column=0, row=2, sticky="nsew")
             self.filter_scale.grid(column=0, row=3)
         elif image_filter == "Grayscale" or image_filter == "Salt and Pepper":
-            self.more_filters.grid_forget()
-
             values: dict = self.grayscale_filters if image_filter == "Grayscale" else self.salt_and_pepper_filters
             keys = [*values.keys()]
+            self.current_more_filter.set("None")
             self.more_filters = self.create_option_menu(keys, True)
             self.more_filters.grid(column=0, row=2, sticky="nsew")
 

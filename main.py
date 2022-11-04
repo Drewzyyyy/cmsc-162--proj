@@ -77,8 +77,6 @@ if __name__ == "__main__":
     edit.add_cascade(label="Remove tab", menu=remove_tab)
     remove_tab.add_command(label="Current tab", command=state_manager.remove_current_tab)
     remove_tab.add_separator()
-    # for idx, frame in enumerate(notebook.tabs()):
-    #   print(f"{idx}: {frame}")
     menubar.add_cascade(label="Edit", menu=edit)
 
     # Runs the window

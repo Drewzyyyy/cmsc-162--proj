@@ -104,7 +104,6 @@ class StateManager(Subject):
         self.headers_changed = False
         self.hist_changed = False
         self.filters_changed = True
-        print('i am triggered')
         self.notify()
 
     # Add new tabs to image frame
@@ -164,9 +163,7 @@ class StateManager(Subject):
 
     # Get instance of current tab
     def get_current_tab(self):
-        # print(self._notebook.tab(self._notebook.select(), "text"))
         return self._frame_dict[self._notebook.tab(self._notebook.select(), "text")]
-        # return self._frame_list[self._notebook.index(self._notebook.select())]
 
     # Changes the UI based on the current tab
     def change_tab(self, event):

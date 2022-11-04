@@ -60,7 +60,6 @@ def generate_colored_negative(negative_img_colored):
                 color_of_pixel = 256 - color_of_pixel
                 negative_img_colored.putpixel((i, j), color_of_pixel)
 
-    print('nega good')
     return get_imagetk(negative_img_colored)
 
 
@@ -82,7 +81,6 @@ def generate_negative_grayscale(grayscale_img):
                 color_of_pixel = 256 - color_of_pixel
                 grayscale_img.putpixel((i, j), color_of_pixel)
 
-    print('nega grayscale good')
     return get_imagetk(grayscale_img)
 
 
@@ -141,7 +139,6 @@ def generate_averaging_filter(img):
                                 i + 1, j + 1] * mask[2, 2]
 
     new_img = new_img.astype(np.uint8)
-    print('ave filt good')
     return get_imagetk(new_img)
 
 
@@ -166,7 +163,6 @@ def median_filtering(img):
             new_img[i, j] = tmp[4]
 
     new_img = new_img.astype(np.uint8)
-    print('medi filt good')
     return get_imagetk(new_img)
 
 
@@ -182,7 +178,6 @@ def highpass_laplacian(img):
 
     clip = np.array(np.clip(filter_data2, 0, 255), dtype='uint8')
 
-    print('lap good')
     return get_imagetk(clip)
 
 
@@ -197,7 +192,6 @@ def unsharp_masking(img):
     final = cv2.normalize(final, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     final = final.astype('uint8')
 
-    print('unsharp good')
     return get_imagetk(final)
 
 
@@ -213,7 +207,6 @@ def highboost(img):
     final = cv2.normalize(final, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     final = final.astype('uint8')
 
-    print('highboost good')
     return get_imagetk(final)
 
 
@@ -239,7 +232,6 @@ def gradient_sobel(img):
             y_grad[i + 1, j + 1] = y_partial
             final_img[i + 1, j + 1] = np.sqrt(x_partial ** 2 + y_partial ** 2)
 
-    print('sobel good')
     return get_imagetk(final_img), get_imagetk(x_grad), get_imagetk(y_grad)
 
 
@@ -249,7 +241,7 @@ def generate_more_filters(base_image):
     else:
         base_image = 'salt_and_pepper'
     cv2_image = cv2.imread(f'./assets/{base_image}.png', 0)
-    sobel_ave, sobel_x, sobel_y = gradient_sobel(cv2_image)
+    sobel_ave, sobel_x, sobel_y = gradient_sobel(deepcopy(cv2_image))
 
     return {
         "None": None,
