@@ -10,7 +10,7 @@ from ImageFrame import ImageFrame
 from utils import \
     generate_grayscale, \
     generate_negative_grayscale, \
-    generate_low_gamma, \
+    generate_law_gamma, \
     generate_bw, \
     generate_colored_negative, \
     salt_and_pepper
@@ -310,5 +310,5 @@ class StateManager(Subject):
             "Black and White": generate_bw(),
 
             # power law gamma
-            "Low Gamma": generate_low_gamma(),
+            "Low Gamma": generate_law_gamma(),
         }

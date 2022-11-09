@@ -1,6 +1,6 @@
 from tkinter import Frame, StringVar, OptionMenu, Label, IntVar, Scale, DoubleVar
 from tkinter.ttk import Notebook
-from utils import generate_low_gamma, generate_bw, generate_more_filters
+from utils import generate_law_gamma, generate_bw, generate_more_filters
 
 
 # Frame tab that stores the filters the image is applied to
@@ -161,7 +161,7 @@ class FiltersFrame(Frame):
         self.filter_scale_val.set(value)
         curr_filter = self.current_filter.get()
         if curr_filter == "Low Gamma":
-            self.filters["Low Gamma"] = generate_low_gamma(self.filter_scale_val.get())
+            self.filters["Low Gamma"] = generate_law_gamma(self.filter_scale_val.get())
         else:
             self.filters["Black and White"] = generate_bw(self.filter_scale_val.get())
         self.filtered_image = Label(self,

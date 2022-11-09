@@ -27,33 +27,41 @@ def get_imagetk(image):
 
 # Generate an image with a grayscale filter
 def generate_grayscale(png_image):
-    png_image = np.asarray(png_image)
-    grayscale = png_image.astype('float')
+    png_image = np.asarray(png_image) # RGB array
+    grayscale = png_image.astype('float') # convert to float
 
+    # Splits into three arrays of red, green, and blue 
     red = grayscale[:, :, 0]
     green = grayscale[:, :, 1]
     blue = grayscale[:, :, 2]
 
+    # Transformation function to convert RGB to greyscale
     grayscale_img = 0.2989 * red + 0.5870 * green + 0.1140 * blue
 
+    # Converts to image
     grayscale_img = Image.fromarray(np.uint8(grayscale_img))
 
     grayscale_img.save('./assets/grayscale.png')
 
     return grayscale_img, np.uint8(grayscale_img)
 
-
+# Generates the colored negative of an image
+# As a parameter, it getes the colored image to convert.
 def generate_colored_negative(negative_img_colored):
     for i in range(negative_img_colored.size[0] - 1):
         for j in range(negative_img_colored.size[1] - 1):
-
+            
+            # Gets the current pixel
             color_of_pixel = negative_img_colored.getpixel((i, j))
 
+            # Checks if it is an RGB pixel
             if type(color_of_pixel) == tuple:
+                # Conversion to negative
                 red = 256 - color_of_pixel[0]
                 green = 256 - color_of_pixel[1]
                 blue = 256 - color_of_pixel[2]
-
+                
+                # Replaces the pixel of the image with the negative pixel
                 negative_img_colored.putpixel((i, j), (red, green, blue))
             else:
                 # for grayscale
@@ -85,22 +93,27 @@ def generate_negative_grayscale(grayscale_img):
 
 
 # Generate a black and white image based on the image uploaded
+# Gets the user input regarding the manual threshold as a parameter
 def generate_bw(threshold: int = 127):
     png_img = cv2.imread('./assets/grayscale.png')
+
+    # When the pixel value is < threshold, it will be set to 0. If pixel value is > threshold, it will be set to 255
+    # Produces the b&w image
     (thresh, b_and_white) = cv2.threshold(
         png_img, threshold, 255, cv2.THRESH_BINARY)
     return get_imagetk(b_and_white)
 
 
-# Generate an image with low gamma filter based on the image uploaded
-def generate_low_gamma(gamma_const: float = 0.4):
+# Generate an image with law gamma filter based on the image uploaded
+def generate_law_gamma(gamma_const: float = 0.4):
     img = cv2.imread('./assets/pic.png')
+
+    # converts image to gamma filter using the gamma value the user selected
     gamma = np.array(255 * (img / 255)
                      ** gamma_const, dtype='uint8')
     return get_imagetk(gamma)
 
 
-# DREW: toggle to apply filter on salt and pepper image or purely grayscale lang for average, median
 def salt_and_pepper(img):
     rows, cols = img.shape
 
