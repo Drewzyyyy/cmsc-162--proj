@@ -1,19 +1,18 @@
 from tkinter import StringVar
-from tkinter.ttk import Notebook
 import cv2
 from PIL import Image
 from PIL.ImageTk import PhotoImage
 from struct import unpack
 import numpy as np
 from matplotlib import pyplot as plt
-from ImageFrame import ImageFrame
 from utils import \
     generate_grayscale, \
-    generate_negative_grayscale, \
-    generate_law_gamma, \
+    generate_low_gamma, \
     generate_bw, \
-    generate_colored_negative, \
-    salt_and_pepper
+    generate_negative, \
+    salt_and_pepper, \
+    open_image
+from copy import deepcopy
 
 
 # Custom subject class that triggers the update method of classes when variables are changed
@@ -21,15 +20,18 @@ class Subject:
     def __init__(self):
         self._observers = []
 
+    # Notifies all listeners to the state changes
     def notify(self, modifier=None):
         for observer in self._observers:
             if modifier != observer:
                 observer.notify(self)
 
+    # Adds a new listener
     def subscribe(self, observer):
         if observer not in self._observers:
             self._observers.append(observer)
 
+    # Removes a listener
     def unsubscribe(self, observer):
         try:
             self._observers.remove(observer)
@@ -37,27 +39,40 @@ class Subject:
             pass
 
 
+# Stores all the states that are shared among all the classes
 class StateManager(Subject):
-    def __init__(self, notebook: Notebook):
+    def __init__(self):
         Subject.__init__(self)
-        self._notebook = notebook
-        # self._frame_list: list[ImageFrame] = []
-        self._frame_dict: dict = {}
-        self._tab_count = 0
+        # All private properties are states that notify listeners that their values had changed
 
-        self._img_header_dict: dict = {}
-        self._histograms_dict: dict = {}
-        self._filters_dict: dict = {}
+        # Current image displayed
+        self._curr_img: Image = None
+
+        # Default image without the filters
+        self._default_img: Image = None
+
+        # All image headers (if the file is PCX)
         self._img_headers = {}
+
+        # All channel histograms of the current image
         self._histograms = ()
+
+        # All filtered versions of the image
         self._filters = {}
+
+        # All color channels
         self.channel_images = ()
 
+        # Current histogram displayed
         self.hist_displayed = "red"
+
+        # Booleans that help isolate which state had changed
         self.hist_changed = False
         self.headers_changed = False
         self.filters_changed = False
+        self.img_changed = False
 
+        # Status text displayed at the bottom of the window
         self.status = StringVar()
         self.status.set("Application started.")
 
@@ -73,191 +88,113 @@ class StateManager(Subject):
     def filters(self):
         return self._filters
 
+    @property
+    def curr_img(self):
+        return self._curr_img
+
+    @property
+    # Convert to cv2 instead of a Pillow Image Type
+    def curr_cv2_img(self):
+        np_array = np.array(self._curr_img)
+        return cv2.cvtColor(np_array, cv2.COLOR_RGB2BGR)
+
+    @property
+    def default_img(self):
+        return self._default_img
+
+    @property
+    # Convert to cv2 instead of a Pillow Image Type
+    def default_cv2_img(self):
+        if self._default_img is None:
+            return None
+        np_array = np.array(self._default_img)
+        return cv2.cvtColor(np_array, cv2.COLOR_RGB2BGR)
+
     @img_headers.setter
+    # Update the image headers then notify listeners
     def img_headers(self, img_headers: dict):
         self._img_headers = img_headers
-        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
-        if self._img_header_dict[curr_tab_name] != img_headers:
-            self._img_header_dict[curr_tab_name] = img_headers
         self.hist_changed = False
         self.filters_changed = False
+        self.img_changed = False
         self.headers_changed = True
         self.notify()
 
     @histograms.setter
+    # Update the histograms then notify listeners
     def histograms(self, histograms: tuple):
         self._histograms = histograms
-        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
-        if self._histograms_dict[curr_tab_name] != histograms:
-            self._histograms_dict[curr_tab_name] = histograms
         self.headers_changed = False
         self.filters_changed = False
+        self.img_changed = False
         self.hist_changed = True
         self.notify()
 
     @filters.setter
+    # Update the filters then notify listeners
     def filters(self, filters: dict):
         self._filters = filters
-        curr_tab_name = self._notebook.tab(self._notebook.select(), "text")
-        if self._filters_dict[curr_tab_name] != filters:
-            self._filters_dict[curr_tab_name] = filters
         self.headers_changed = False
         self.hist_changed = False
+        self.img_changed = False
         self.filters_changed = True
         self.notify()
 
-    # Add new tabs to image frame
-    def add_tab(self, name="New File"):
-        try:
-            if self._tab_count == 1:
-                frame: ImageFrame = self.get_current_tab()
-                # frame: ImageFrame = self._frame_list[self._notebook.index(self._notebook.select())]
-                if not frame.image_frame.winfo_ismapped():
-                    frame.image_frame = frame.create_frame()
-                    return
-            elif self._tab_count == 6:
-                self.status.set("Maximum of 6 tabs is allowed.")
-                return
-            # TODO: add loading screen
-            image_frame = ImageFrame(self)
+    @curr_img.setter
+    # Update the current image then notify listeners
+    def curr_img(self, img: Image):
+        self._curr_img = img
+        self.headers_changed = False
+        self.hist_changed = False
+        self.filters_changed = False
+        self.img_changed = True
+        self.notify()
 
-            self._tab_count += 1
-            if name == "New File":
-                name = f"{name} {self._tab_count}"
-
-            self._notebook.add(image_frame.image_frame, text=name)
-            # self._frame_list.append(image_frame)
-            self._frame_dict[name] = image_frame
-            self._histograms_dict[name] = {}
-            self._img_header_dict[name] = {}
-            self._filters_dict[name] = {}
-            self.status.set("New tab created.")
-        except IndexError:
-            raise
-
-    # Remove current image tab
-    def remove_current_tab(self):
-        try:
-            frame_name = self._notebook.tab(self._notebook.select(), "text")
-            if self._tab_count == 1:
-                # self._frame_list[self._notebook.index(self._notebook.select())].image_frame.grid_forget()
-                self._frame_dict[frame_name].image_frame.grid_forget()
-                return
-            self._frame_dict.pop(frame_name)
-            self._histograms_dict.pop(frame_name)
-            self._img_header_dict.pop(frame_name)
-            self._filters_dict.pop(frame_name)
-            self._notebook.forget(
-                self._notebook.index(self._notebook.select()))
-            self._tab_count -= 1
-        except IndexError:
-            raise
-
-    # Return an instance of the current notebook instance
-    def get_notebook_instance(self) -> Notebook:
-        return self._notebook
-
-    # Get notebook dimensions
-    def get_tab_dimensions(self):
-        return self._notebook.winfo_reqwidth(), self._notebook.winfo_reqwidth()
-
-    # Get instance of current tab
-    def get_current_tab(self):
-        return self._frame_dict[self._notebook.tab(self._notebook.select(), "text")]
-
-    # Changes the UI based on the current tab
-    def change_tab(self, event):
-        try:
-            curr_frame_name: ImageFrame = event.widget.tab(
-                self._notebook.select(), "text")
-            self.img_headers = self._img_header_dict[curr_frame_name]
-            self.histograms = self._histograms_dict[curr_frame_name]
-            self.filters = self._filters_dict[curr_frame_name]
-        except KeyError:
-            self.status.set("KeyError in changing tabs.")
-
-    # Renames the current tab in the stored dictionary
-    def rename_current_tab(self, name: str):
-        old_key = self._notebook.tab(self._notebook.select(), "text")
-        self._frame_dict[name] = self._frame_dict.pop(old_key)
-        self._histograms_dict[name] = self._histograms_dict.pop(old_key)
-        self._img_header_dict[name] = self._img_header_dict.pop(old_key)
-        self._filters_dict[name] = self._filters_dict.pop(old_key)
-        self._notebook.tab("current", text=name)
+    @default_img.setter
+    # Update the default image then notify listeners
+    def default_img(self, img: Image):
+        self._default_img = img
+        self.headers_changed = False
+        self.hist_changed = False
+        self.filters_changed = False
+        self.img_changed = True
+        self.notify()
 
     # Generates a histogram for every channel and its corresponding color channel
     def generate_histogram(self, screen_size):
-        # TODO: Add loading screen
+        channel_img_list = []
+        channel_histogram_list = []
+        channel_list = {"red": [0, 1], "green": [0, 2], "blue": [1, 2]}
+
         # Algo for channels
+        for channel_name in channel_list:
+            channel = deepcopy(self.curr_cv2_img)
+            channel[:, :, channel_list[channel_name][0]] = 0
+            channel[:, :, channel_list[channel_name][1]] = 0
 
-        # Red Channel
-        red_channel = cv2.imread('./assets/pic.png')
-        red_channel[:, :, 0] = 0 # blue channel is set to 0
-        red_channel[:, :, 1] = 0 # green channel is set to 0
-        cv2.imwrite('./assets/red_channel.png', red_channel) # creates or overwrites the red channel image file
-        red_channel_img = Image.open('./assets/red_channel.png') # opens the red channel image 
-        red_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        red_channel_img = PhotoImage(red_channel_img) # converts image to an image compatible w/ Tkinter
+            # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
+            channel = cv2.cvtColor(channel, cv2.COLOR_BGR2RGB)
+            channel_img = Image.fromarray(channel)
+            channel_img.thumbnail(screen_size, Image.LANCZOS)
+            channel_img_list.append(PhotoImage(channel_img))
 
-        green_channel = cv2.imread('./assets/pic.png')
-        green_channel[:, :, 0] = 0 # blue channel is set to 0
-        green_channel[:, :, 2] = 0 # red channel is set to 0
-        cv2.imwrite('./assets/green_channel.png', green_channel) # creates or overwrites the green channel image file
-        green_channel_img = Image.open('./assets/green_channel.png') # opens the green channel image 
-        green_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        green_channel_img = PhotoImage(green_channel_img) # converts image to an image compatible w/ Tkinter
+            # get sum and make 1d array
+            channel_image_values = channel.sum(axis=2).ravel()
+            bars, bins = np.histogram(channel_image_values, range(257))
 
-        blue_channel = cv2.imread('./assets/pic.png')
-        blue_channel[:, :, 1] = 0 # green channel is set to 0
-        blue_channel[:, :, 2] = 0 # red channel is set to 0
-        cv2.imwrite('./assets/blue_channel.png', blue_channel) # creates or overwrites the blue channel image file
-        blue_channel_img = Image.open('./assets/blue_channel.png') # opens the blue channel image 
-        blue_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        blue_channel_img = PhotoImage(blue_channel_img) # converts image to an image compatible w/ Tkinter
+            # Generate the plot and convert it to image
+            fig = plt.figure()
+            plt.hist(channel_image_values, bins, color=channel_name)
+            fig.canvas.draw()
+            img = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
+            img = img.reshape(fig.canvas.get_width_height()[::-1] + (3,))
+            img = Image.fromarray(img)
+            img.thumbnail(screen_size, Image.LANCZOS)
+            channel_histogram_list.append(PhotoImage(img))
 
-        self.channel_images = (
-            red_channel_img, green_channel_img, blue_channel_img)
-
-        # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
-        gen_red_image = cv2.cvtColor(red_channel, cv2.COLOR_BGR2RGB)
-        gen_green_image = cv2.cvtColor(green_channel, cv2.COLOR_BGR2RGB)
-        gen_blue_image = cv2.cvtColor(blue_channel, cv2.COLOR_BGR2RGB)
-
-        # get sum and make 1d array
-        red_image_values = gen_red_image.sum(axis=2).ravel()
-        # bars indicate how many items are included in a specific bin/column
-        bars, bins = np.histogram(red_image_values, range(257)) 
-
-        plt.figure()
-        plt.hist(red_image_values, bins, color="red") # creates histogram
-        plt.savefig("./assets/red_hist.png")
-        red_img = Image.open("./assets/red_hist.png")
-        red_img.thumbnail(screen_size, Image.LANCZOS)
-        red_channel = PhotoImage(red_img)
-
-        green_image_values = gen_green_image.sum(axis=2).ravel()
-        # bars indicate how many items are included in a specific bin/column
-        bars, bins = np.histogram(gen_green_image, range(257))
-
-        plt.figure()
-        plt.hist(green_image_values, bins, color="green") # creates histogram
-        plt.savefig("./assets/green_hist.png")
-        green_img = Image.open("./assets/green_hist.png")
-        green_img.thumbnail(screen_size, Image.LANCZOS)
-        green_channel = PhotoImage(green_img)
-
-        blue_image_values = gen_blue_image.sum(axis=2).ravel()
-        # bars indicate how many items are included in a specific bin/column
-        bars, bins = np.histogram(gen_blue_image, range(257))
-
-        plt.figure()
-        plt.hist(blue_image_values, bins, color="blue") # creates histogram
-        plt.savefig("./assets/blue_hist.png")
-        blue_img = Image.open("./assets/blue_hist.png")
-        blue_img.thumbnail(screen_size, Image.LANCZOS)
-        blue_channel = PhotoImage(blue_img)
-
-        self.histograms = (red_channel, green_channel, blue_channel)
+        # Change the current channel images and histograms then notify the listeners
+        self.channel_images = tuple(channel_img_list)
+        self.histograms = tuple(channel_histogram_list)
 
     # Read .PCX header files
     def read_pcx_header(self, file):
@@ -266,7 +203,6 @@ class StateManager(Subject):
 
         # opens the file and reads it as binary
         with open(file, 'rb') as pcx:
-
             # Unpacking binary header file depending on the size
             img_headers['manufacturer'] = unpack('B', pcx.read(1))[0]
             img_headers['version'] = unpack('B', pcx.read(1))[0]
@@ -289,26 +225,67 @@ class StateManager(Subject):
         self.img_headers = img_headers
 
     # Generate all image filters
-    def generate_all_filters(self, png_image):
-        cv2_image = cv2.imread('./assets/pic.png', 0)
-        grayscale_pil, grayscale_np = generate_grayscale(png_image)
+    def generate_all_filters(self):
+        # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
+        cv2_image = cv2.cvtColor(self.curr_cv2_img, cv2.COLOR_BGR2GRAY)
+        png_image = deepcopy(self.curr_img)
+        # Generate the grayscale
+        grayscale = generate_grayscale(png_image)
 
         self.filters = {
+            # Default image
+            "Default": PhotoImage(self.default_img),
+
             # convert to grayscale
-            "Grayscale": PhotoImage(grayscale_pil),
+            "Grayscale": PhotoImage(deepcopy(grayscale)),
 
             # salt and pepper
-            "Salt and Pepper": salt_and_pepper(cv2_image),
+            "Salt and Pepper": salt_and_pepper(deepcopy(cv2_image)),
 
             # negative for the colored image
-            "Colored Negative": generate_colored_negative(png_image),
+            "Colored Negative": generate_negative(deepcopy(png_image)),
 
             # negative for the grayscale image
-            "Grayscale Negative": generate_negative_grayscale(grayscale_pil),
+            "Grayscale Negative": generate_negative(deepcopy(grayscale)),
 
             # black and white
-            "Black and White": generate_bw(),
+            "Black and White": generate_bw(deepcopy(cv2_image)),
 
             # power law gamma
-            "Low Gamma": generate_law_gamma(),
+            "Low Gamma": generate_low_gamma(self.curr_cv2_img),
         }
+
+    # Opens an image and properly formats it
+    def process_image(self):
+        try:
+
+            # Open file dialog
+            image_path = open_image()
+
+            image = Image.open(image_path)
+
+            # Set image to state manager
+            image_name = image_path.split("/")[-1]
+
+            # Display headers if .pcx image
+            if image.format == "PCX":
+                self.read_pcx_header(image_path)
+
+            # Convert image to PNG for channels algo and save to same folder as this file
+            if image.info.get("transparency", None) is not None:
+                png_image = image.convert("RGBA")
+            else:
+                png_image = image.convert("RGB")
+
+            # Set the current image and notify listeners
+            self.curr_img = png_image
+            self.default_img = png_image
+            self.status.set(f"{image_name} opened.")
+            self.status.set("Generating filters...")
+            self.generate_all_filters()
+
+            self.status.set("Generated filters")
+
+        except AttributeError:
+            # Display error on failure
+            raise

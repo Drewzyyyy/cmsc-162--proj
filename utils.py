@@ -30,7 +30,7 @@ def generate_grayscale(png_image):
     png_image = np.asarray(png_image) # RGB array
     grayscale = png_image.astype('float') # convert to float
 
-    # Splits into three arrays of red, green, and blue 
+    # Splits into three arrays of red, green, and blue
     red = grayscale[:, :, 0]
     green = grayscale[:, :, 1]
     blue = grayscale[:, :, 2]
@@ -41,18 +41,16 @@ def generate_grayscale(png_image):
     # Converts to image
     grayscale_img = Image.fromarray(np.uint8(grayscale_img))
 
-    grayscale_img.save('./assets/grayscale.png')
+    return grayscale_img
 
-    return grayscale_img, np.uint8(grayscale_img)
 
-# Generates the colored negative of an image
-# As a parameter, it getes the colored image to convert.
-def generate_colored_negative(negative_img_colored):
-    for i in range(negative_img_colored.size[0] - 1):
-        for j in range(negative_img_colored.size[1] - 1):
-            
+# Generate a negative of the image grayscale
+def generate_negative(img):
+    for i in range(img.size[0] - 1):
+        for j in range(img.size[1] - 1):
+
             # Gets the current pixel
-            color_of_pixel = negative_img_colored.getpixel((i, j))
+            color_of_pixel = img.getpixel((i, j))
 
             # Checks if it is an RGB pixel
             if type(color_of_pixel) == tuple:
@@ -60,42 +58,19 @@ def generate_colored_negative(negative_img_colored):
                 red = 256 - color_of_pixel[0]
                 green = 256 - color_of_pixel[1]
                 blue = 256 - color_of_pixel[2]
-                
+
                 # Replaces the pixel of the image with the negative pixel
-                negative_img_colored.putpixel((i, j), (red, green, blue))
+                img.putpixel((i, j), (red, green, blue))
             else:
                 # for grayscale
                 color_of_pixel = 256 - color_of_pixel
-                negative_img_colored.putpixel((i, j), color_of_pixel)
+                img.putpixel((i, j), color_of_pixel)
 
-    return get_imagetk(negative_img_colored)
-
-
-# Generate a negative of the image grayscale
-def generate_negative_grayscale(grayscale_img):
-    for i in range(grayscale_img.size[0] - 1):
-        for j in range(grayscale_img.size[1] - 1):
-
-            color_of_pixel = grayscale_img.getpixel((i, j))
-
-            if type(color_of_pixel) == tuple:
-                red = 256 - color_of_pixel[0]
-                green = 256 - color_of_pixel[1]
-                blue = 256 - color_of_pixel[2]
-
-                grayscale_img.putpixel((i, j), (red, green, blue))
-            else:
-                # for grayscale
-                color_of_pixel = 256 - color_of_pixel
-                grayscale_img.putpixel((i, j), color_of_pixel)
-
-    return get_imagetk(grayscale_img)
+    return get_imagetk(img)
 
 
 # Generate a black and white image based on the image uploaded
-# Gets the user input regarding the manual threshold as a parameter
-def generate_bw(threshold: int = 127):
-    png_img = cv2.imread('./assets/grayscale.png')
+def generate_bw(png_img, threshold: int = 127):
 
     # When the pixel value is < threshold, it will be set to 0. If pixel value is > threshold, it will be set to 255
     # Produces the b&w image
@@ -104,10 +79,9 @@ def generate_bw(threshold: int = 127):
     return get_imagetk(b_and_white)
 
 
-# Generate an image with law gamma filter based on the image uploaded
+# Generate an image with low gamma filter based on the image uploaded
 # Gets the user input regarding the gamma constant/value as a parameter
-def generate_law_gamma(gamma_const: float = 0.4):
-    img = cv2.imread('./assets/pic.png')
+def generate_low_gamma(img, gamma_const: float = 0.4):
 
     # converts image to gamma filter using the gamma value the user selected
     gamma = np.array(255 * (img / 255)
@@ -118,14 +92,14 @@ def generate_law_gamma(gamma_const: float = 0.4):
 # Gets the image as a parameter
 def salt_and_pepper(img):
     rows, cols = img.shape
-    
+
     # Randomly generates random number of pixels to be affected by the salt and pepper noise
     num_pix = randint(300, 10000)
 
     # Change to white
     for i in range(num_pix):
         # choose random coordinates
-        y = randint(0, rows - 1) 
+        y = randint(0, rows - 1)
         x = randint(0, cols - 1)
         img[y][x] = 255 # turn random pixel to white
 
@@ -217,7 +191,7 @@ def unsharp_masking(img):
     blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT) # blurring the image
 
     # Subtracting blurred image from the original
-    mask = img - blurred_img  
+    mask = img - blurred_img
     final = img + mask # adds mask/filter for unsharp masking to the original image
 
     final = np.clip(final, 0, 255)
@@ -237,7 +211,7 @@ def highboost(img):
     mask = img - blurred_img
     amplify_param = 5 # amplification parameter
     # adds the product of the mask/filter and amplification parameter to the original image for highboost filtering
-    final = img + amplify_param * mask 
+    final = img + amplify_param * mask
     final = np.clip(final, 0, 255)
     final = cv2.normalize(final, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
     final = final.astype('uint8')
@@ -283,7 +257,7 @@ def generate_more_filters(base_image):
     sobel_ave, sobel_x, sobel_y = gradient_sobel(deepcopy(cv2_image))
 
     return {
-        "None": None,
+        "Default": None,
         # average
         "Low Pass Average": generate_averaging_filter(deepcopy(cv2_image)),
 
