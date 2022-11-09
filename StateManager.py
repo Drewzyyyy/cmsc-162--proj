@@ -257,8 +257,13 @@ class StateManager(Subject):
 
     # Read .PCX header files
     def read_pcx_header(self, file):
+
         img_headers = {}
+
+        # opens the file and reads it as binary
         with open(file, 'rb') as pcx:
+
+            # Unpacking binary header file depending on the size
             img_headers['manufacturer'] = unpack('B', pcx.read(1))[0]
             img_headers['version'] = unpack('B', pcx.read(1))[0]
             img_headers['encoding '] = unpack('B', pcx.read(1))[0]
