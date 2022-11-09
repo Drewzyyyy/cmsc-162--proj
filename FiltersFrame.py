@@ -1,7 +1,6 @@
 from tkinter import Frame, StringVar, OptionMenu, Label, IntVar, Scale, DoubleVar
 from utils import generate_low_gamma, generate_bw, generate_more_filters
 import cv2
-from numpy import array, uint8
 
 
 # Frame tab that stores the filters the image is applied to
