@@ -189,65 +189,69 @@ class StateManager(Subject):
     def generate_histogram(self, screen_size):
         # TODO: Add loading screen
         # Algo for channels
+
+        # Red Channel
         red_channel = cv2.imread('./assets/pic.png')
-        red_channel[:, :, 0] = 0
-        red_channel[:, :, 1] = 0
-        cv2.imwrite('./assets/red_channel.png', red_channel)
-        red_channel_img = Image.open('./assets/red_channel.png')
+        red_channel[:, :, 0] = 0 # blue channel is set to 0
+        red_channel[:, :, 1] = 0 # green channel is set to 0
+        cv2.imwrite('./assets/red_channel.png', red_channel) # creates or overwrites the red channel image file
+        red_channel_img = Image.open('./assets/red_channel.png') # opens the red channel image 
         red_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        red_channel_img = PhotoImage(red_channel_img)
+        red_channel_img = PhotoImage(red_channel_img) # converts image to an image compatible w/ Tkinter
 
         green_channel = cv2.imread('./assets/pic.png')
-        green_channel[:, :, 0] = 0
-        green_channel[:, :, 2] = 0
-        cv2.imwrite('./assets/green_channel.png', green_channel)
-        green_channel_img = Image.open('./assets/green_channel.png')
+        green_channel[:, :, 0] = 0 # blue channel is set to 0
+        green_channel[:, :, 2] = 0 # red channel is set to 0
+        cv2.imwrite('./assets/green_channel.png', green_channel) # creates or overwrites the green channel image file
+        green_channel_img = Image.open('./assets/green_channel.png') # opens the green channel image 
         green_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        green_channel_img = PhotoImage(green_channel_img)
+        green_channel_img = PhotoImage(green_channel_img) # converts image to an image compatible w/ Tkinter
 
         blue_channel = cv2.imread('./assets/pic.png')
-        blue_channel[:, :, 1] = 0
-        blue_channel[:, :, 2] = 0
-        cv2.imwrite('./assets/blue_channel.png', blue_channel)
-        blue_channel_img = Image.open('./assets/blue_channel.png')
+        blue_channel[:, :, 1] = 0 # green channel is set to 0
+        blue_channel[:, :, 2] = 0 # red channel is set to 0
+        cv2.imwrite('./assets/blue_channel.png', blue_channel) # creates or overwrites the blue channel image file
+        blue_channel_img = Image.open('./assets/blue_channel.png') # opens the blue channel image 
         blue_channel_img.thumbnail(screen_size, Image.LANCZOS)
-        blue_channel_img = PhotoImage(blue_channel_img)
+        blue_channel_img = PhotoImage(blue_channel_img) # converts image to an image compatible w/ Tkinter
 
         self.channel_images = (
             red_channel_img, green_channel_img, blue_channel_img)
 
         # read image from folder and converts it to RGB because cv2.cvtColor returns BGR
-        # reads red picture; if you want green/blue, change file name
         gen_red_image = cv2.cvtColor(red_channel, cv2.COLOR_BGR2RGB)
         gen_green_image = cv2.cvtColor(green_channel, cv2.COLOR_BGR2RGB)
         gen_blue_image = cv2.cvtColor(blue_channel, cv2.COLOR_BGR2RGB)
 
         # get sum and make 1d array
         red_image_values = gen_red_image.sum(axis=2).ravel()
-        bars, bins = np.histogram(red_image_values, range(257))
+        # bars indicate how many items are included in a specific bin/column
+        bars, bins = np.histogram(red_image_values, range(257)) 
 
         plt.figure()
-        plt.hist(red_image_values, bins, color="red")
+        plt.hist(red_image_values, bins, color="red") # creates histogram
         plt.savefig("./assets/red_hist.png")
         red_img = Image.open("./assets/red_hist.png")
         red_img.thumbnail(screen_size, Image.LANCZOS)
         red_channel = PhotoImage(red_img)
 
         green_image_values = gen_green_image.sum(axis=2).ravel()
+        # bars indicate how many items are included in a specific bin/column
         bars, bins = np.histogram(gen_green_image, range(257))
 
         plt.figure()
-        plt.hist(green_image_values, bins, color="green")
+        plt.hist(green_image_values, bins, color="green") # creates histogram
         plt.savefig("./assets/green_hist.png")
         green_img = Image.open("./assets/green_hist.png")
         green_img.thumbnail(screen_size, Image.LANCZOS)
         green_channel = PhotoImage(green_img)
 
         blue_image_values = gen_blue_image.sum(axis=2).ravel()
+        # bars indicate how many items are included in a specific bin/column
         bars, bins = np.histogram(gen_blue_image, range(257))
 
         plt.figure()
-        plt.hist(blue_image_values, bins, color="blue")
+        plt.hist(blue_image_values, bins, color="blue") # creates histogram
         plt.savefig("./assets/blue_hist.png")
         blue_img = Image.open("./assets/blue_hist.png")
         blue_img.thumbnail(screen_size, Image.LANCZOS)
