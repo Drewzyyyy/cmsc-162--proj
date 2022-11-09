@@ -1,10 +1,11 @@
 from tkinter import Frame, Label, OptionMenu, StringVar
-from tkinter.ttk import Notebook
 from PIL.ImageTk import PhotoImage
 
 
+# Generates the Frame for displaying the histogram
 class HistogramFrame(Frame):
-    def __init__(self, parent: Notebook, config: dict):
+    def __init__(self, parent, config: dict):
+        # Specific config values for dimensions and background color
         self.config = config
         self.parent = parent
 
@@ -18,7 +19,10 @@ class HistogramFrame(Frame):
         self.grid_propagate(False)
         self.update_idletasks()
 
+        # All possible channels
         self.values = ["Red", "Green", "Blue"]
+
+        # Stores the current chosen channel
         self.var = StringVar(value=self.values[0])
 
         self.channel_options = OptionMenu(self,
@@ -26,17 +30,10 @@ class HistogramFrame(Frame):
                                           *self.values,
                                           command=self.set_images)
 
-        # Histograms
-        self.red_channel_hist: PhotoImage or None = None
-        self.green_channel_hist: PhotoImage or None = None
-        self.blue_channel_hist: PhotoImage or None = None
+        self.channel_histograms: dict = {"Red": None, "Green": None, "Blue": None}
+        self.channel_images: dict = {"Red": None, "Green": None, "Blue": None}
 
-        # Channel images
-        self.red_channel_img: PhotoImage or None = None
-        self.green_channel_img: PhotoImage or None = None
-        self.blue_channel_img: PhotoImage or None = None
-
-        # Instantiate histogram and channel image
+        # Instantiate histogram and channel images
         self.histogram: Label = Label(self)
         self.channel_img: Label = Label(self)
 
@@ -51,48 +48,41 @@ class HistogramFrame(Frame):
                     self.channel_options.grid_forget()
                     return
 
-                self.red_channel_hist = states.histograms[0]
-                self.green_channel_hist = states.histograms[1]
-                self.blue_channel_hist = states.histograms[2]
+                # Iterate through every key, or channel name, then store each value
+                for idx, channel in enumerate(self.channel_histograms):
+                    self.channel_histograms[channel] = states.histograms[idx]
+                    self.channel_images[channel] = states.channel_images[idx]
 
-                self.red_channel_img = states.channel_images[0]
-                self.green_channel_img = states.channel_images[1]
-                self.blue_channel_img = states.channel_images[2]
                 self.set_images("Red")
 
         except ValueError:
             raise
 
+    # Set the images and histogram to be displayed
     def set_images(self, color_channel):
+        # Synchronize the current chosen channel
         if color_channel != self.var.get():
             self.var.set(color_channel)
 
         self.channel_options.grid(column=0, row=0, sticky="NSEW")
+
         # Remove histogram and channel image from the screen to add new ones
         self.histogram.grid_forget()
         self.channel_img.grid_forget()
 
-        hist_img: PhotoImage
-        channel_img: PhotoImage
+        # Set the channel image and histogram based on the color channel
+        hist_img = self.channel_histograms[color_channel]
+        channel_img = self.channel_images[color_channel]
 
-        if color_channel == "Red":
-            hist_img = self.red_channel_hist
-            channel_img = self.red_channel_img
-
-        elif color_channel == "Green":
-            hist_img = self.green_channel_hist
-            channel_img = self.green_channel_img
-
-        else:
-            hist_img = self.blue_channel_hist
-            channel_img = self.blue_channel_img
-
+        # Set the histogram
         self.histogram = Label(self,
                                image=hist_img,
                                bg=self.config["bg"],
                                width=self.winfo_reqwidth(),
                                height=int(self.winfo_reqheight() * 0.4))
         self.histogram.image = hist_img
+
+        # Set the channel color image
         self.channel_img = Label(self,
                                  image=channel_img,
                                  bg=self.config["bg"],
