@@ -278,7 +278,7 @@ def generate_more_filters(base_image):
         "Unsharping Mask": unsharp_masking(deepcopy(cv2_image)),
 
         # high boost
-        "Highboost Filtering": highboost(deepcopy(cv2_image)),
+        "Highboost Amp Parameter=5": highboost(deepcopy(cv2_image)),
 
         # Sobel
         "Gradient Sobel": sobel_ave,

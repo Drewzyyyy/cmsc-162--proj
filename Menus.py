@@ -52,7 +52,7 @@ class Menus(Menu):
                             "Low Pass Median",
                             "High Pass Laplacian",
                             "Unsharping Mask",
-                            "Highboost Filtering",
+                            "Highboost Amp Parameter=5",
                             "Gradient Sobel Average",
                             "Gradient Sobel X",
                             "Gradient Sobel Y"]
