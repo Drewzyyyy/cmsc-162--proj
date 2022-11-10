@@ -192,6 +192,7 @@ class StateManager(Subject):
             img.thumbnail(screen_size, Image.LANCZOS)
             channel_histogram_list.append(PhotoImage(img))
 
+        plt.close()
         # Change the current channel images and histograms then notify the listeners
         self.channel_images = tuple(channel_img_list)
         self.histograms = tuple(channel_histogram_list)
@@ -288,4 +289,4 @@ class StateManager(Subject):
 
         except AttributeError:
             # Display error on failure
-            raise
+            pass

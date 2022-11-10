@@ -86,7 +86,7 @@ class FiltersFrame(Frame):
             # Get a copy of the state manager and the default image
             if self.states is None:
                 self.states = states
-            if self.default_img is None:
+            if states.default_cv2_img is not None:
                 self.default_img = states.default_cv2_img
         except ValueError:
             raise

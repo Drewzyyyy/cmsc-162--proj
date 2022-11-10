@@ -64,6 +64,7 @@ class ImageFrame(Frame):
                 # Resize image
                 image.thumbnail(self.window_dimensions, Image.LANCZOS)
                 image_tk = PhotoImage(image)
+                image.save("./assets/pic.png")
 
                 # Destroy instructions label
                 self.instructions.destroy()

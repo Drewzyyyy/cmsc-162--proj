@@ -89,7 +89,8 @@ class Menus(Menu):
                                                 command=partial(self.set_subfilter, False, sub_filter))
             else:
                 self.filters.add_command(label=main_filter,
-                                         command=partial(self.metadata_frame.filters_frame.set_main_filter_image, main_filter),
+                                         command=partial(self.metadata_frame.filters_frame.set_main_filter_image,
+                                                         main_filter),
                                          state="disabled")
         self.add_cascade(label="Filters", menu=self.filters)
 
