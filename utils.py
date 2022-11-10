@@ -1,4 +1,5 @@
 from tkinter import filedialog
+from tkinter import filedialog
 from PIL import Image
 from PIL.ImageTk import PhotoImage
 import cv2
@@ -127,6 +128,7 @@ def generate_averaging_filter(img):
     # Creates new array for new image w/ filter
     new_img = np.zeros([rows, cols])
 
+    # Applies filter to the image by using the weighted average mask for every pixel
     for i in range(1, rows - 1):
         for j in range(1, cols - 1):
             new_img[i, j] = img[i - 1, j - 1] * mask[0, 0] + img[i - 1, j] * mask[0, 1] + img[i - 1, j + 1] * mask[
@@ -138,11 +140,15 @@ def generate_averaging_filter(img):
     return get_imagetk(new_img)
 
 
+# Generates image w/ median filter
+# Gets the image as a parameter
 def median_filtering(img):
     rows, cols = img.shape  # rows & columns
 
+    # Creates new array for new image w/ filter
     new_img = np.zeros([rows, cols])
 
+    # Applies filter to the image by computing the median and substituting the median for the center pixel
     for i in range(1, rows - 1):
         for j in range(1, cols - 1):
             tmp = [img[i - 1, j - 1],
@@ -155,21 +161,27 @@ def median_filtering(img):
                    img[i + 1, j],
                    img[i + 1, j + 1]]
 
-            tmp = sorted(tmp)
-            new_img[i, j] = tmp[4]
+            tmp = sorted(tmp)  # sorts the values
+            new_img[i, j] = tmp[4]  # replaces pixel with the median of the tmp array
 
     new_img = new_img.astype(np.uint8)
     return get_imagetk(new_img)
 
 
-# Spatial domain laplacian
+# Generates image w/ spatial domain laplacian highpass filter
+# Gets the image as a parameter
 def highpass_laplacian(img):
+    # Kernel for the laplacian filter
     filter_data = np.array([[0, 1, 0],
                             [1, -4, 1],
                             [0, 1, 0]])
 
+    # Applies the kernel to the image, resulting in a laplacian image
     filtered_img = cv2.filter2D(src=img, ddepth=-1, kernel=filter_data)
 
+    # Formula used in the book
+    # Original image is added to the product of the constant and the filtered image
+    # The constant used is -1 because the center of the kernel is negative
     filter_data2 = img + (-1 * filtered_img)
 
     clip = np.array(np.clip(filter_data2, 0, 255), dtype='uint8')
@@ -177,12 +189,15 @@ def highpass_laplacian(img):
     return get_imagetk(clip)
 
 
+# Generates image w/ unsharp masking filter
+# Gets the image as a parameter
 def unsharp_masking(img):
-    img = (img / 255)
-    blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT)
+    img = (img / 255)  # normalization
+    blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT)  # blurring the image
 
+    # Subtracting blurred image from the original
     mask = img - blurred_img
-    final = img + mask
+    final = img + mask  # adds mask/filter for unsharp masking to the original image
 
     final = np.clip(final, 0, 255)
     final = cv2.normalize(final, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
@@ -191,13 +206,17 @@ def unsharp_masking(img):
     return get_imagetk(final)
 
 
+# Generates image w/ highboost filter
+# Gets the image as a parameter
 def highboost(img):
     img = img / 255
 
     blurred_img = cv2.GaussianBlur(img, (31, 31), cv2.BORDER_DEFAULT)
 
+    # Subtracting blurred image from the original
     mask = img - blurred_img
-    amplify_param = 5
+    amplify_param = 5  # amplification parameter
+    # adds the product of the mask/filter and amplification parameter to the original image for highboost filtering
     final = img + amplify_param * mask
     final = np.clip(final, 0, 255)
     final = cv2.normalize(final, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX, dtype=cv2.CV_32F)
@@ -206,20 +225,25 @@ def highboost(img):
     return get_imagetk(final)
 
 
+# Generates image w/ sobel gradient
+# Gets the image as a parameter
 def gradient_sobel(img):
-    row, col = np.shape(img)
-    final_img = np.zeros(shape=(row, col))
-    x_grad = np.zeros(shape=(row, col))
-    y_grad = np.zeros(shape=(row, col))
+    row, col = np.shape(img)  # Gets nos. of rows and columns
+    final_img = np.zeros(shape=(row, col))  # Initializes new array for the final image
+    x_grad = np.zeros(shape=(row, col))  # Initializes new array for sobel x-gradient
+    y_grad = np.zeros(shape=(row, col))  # Initializes new array for sobel y-gradient
 
+    # Sobel y-gradient mask
     y_sobel = np.array(([[-1, -2, -1],
                          [0, 0, 0],
                          [1, 2, 1]]))
 
+    # Sobel x-gradient mask
     x_sobel = np.array(([[-1, 0, 1],
                          [-2, 0, 2],
                          [-1, 0, 1]]))
 
+    # Apply the mask to the image using the formula
     for i in range(row - 2):
         for j in range(col - 2):
             x_partial = np.sum(np.multiply(x_sobel, img[i:i + 3, j:j + 3]))  # compute partial derivative of x
@@ -257,7 +281,7 @@ def generate_more_filters(base_image):
         "Highboost Filtering": highboost(deepcopy(cv2_image)),
 
         # Sobel
-        "Gradient Sobel Average": sobel_ave,
+        "Gradient Sobel": sobel_ave,
         "Gradient Sobel X": sobel_x,
         "Gradient Sobel Y": sobel_y,
     }
