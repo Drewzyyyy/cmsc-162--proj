@@ -46,7 +46,7 @@ def generate_grayscale(png_image):
     return grayscale_img
 
 
-# Generate a negative of the image grayscale
+# Generate a negative of the image
 def generate_negative(img):
     for i in range(img.size[0] - 1):
         for j in range(img.size[1] - 1):
