@@ -254,7 +254,7 @@ class StateManager(Subject):
             "Black and White": generate_bw(deepcopy(cv2_image)),
 
             # power law gamma
-            "Low Gamma": generate_law_gamma(self.curr_cv2_img),
+            "Law Gamma": generate_law_gamma(self.curr_cv2_img),
         }
 
     # Opens an image and properly formats it
