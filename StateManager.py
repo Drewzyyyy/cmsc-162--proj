@@ -198,7 +198,8 @@ class StateManager(Subject):
         self.channel_images = tuple(channel_img_list)
         self.histograms = tuple(channel_histogram_list)
 
-    # Read .PCX header files - Guide 2
+    # Guide 2
+    # Read .PCX header files
     def read_pcx_header(self, file):
 
         img_headers = {}
