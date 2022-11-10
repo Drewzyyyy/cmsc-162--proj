@@ -273,6 +273,8 @@ class StateManager(Subject):
             # Display headers if .pcx image
             if image.format == "PCX":
                 self.read_pcx_header(image_path)
+            else:
+                self.img_headers = {}
 
             # Convert image to PNG for channels algo and save to same folder as this file
             if image.info.get("transparency", None) is not None:

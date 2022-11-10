@@ -28,7 +28,11 @@ class HeaderFrame(Frame):
         try:
             # Display the header metadata
             if states.headers_changed:
+                if not states.img_headers:
+                    self.header_list.delete(0, "end")
+                    return
                 self.display_header(states.img_headers)
+
         except ValueError:
             raise
 
