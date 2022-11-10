@@ -7,7 +7,7 @@ import numpy as np
 from matplotlib import pyplot as plt
 from utils import \
     generate_grayscale, \
-    generate_low_gamma, \
+    generate_law_gamma, \
     generate_bw, \
     generate_negative, \
     salt_and_pepper, \
@@ -160,6 +160,7 @@ class StateManager(Subject):
         self.img_changed = True
         self.notify()
 
+    # Guide 3
     # Generates a histogram for every channel and its corresponding color channel
     def generate_histogram(self, screen_size):
         channel_img_list = []
@@ -197,7 +198,7 @@ class StateManager(Subject):
         self.channel_images = tuple(channel_img_list)
         self.histograms = tuple(channel_histogram_list)
 
-    # Read .PCX header files
+    # Read .PCX header files - Guide 2
     def read_pcx_header(self, file):
 
         img_headers = {}
@@ -253,7 +254,7 @@ class StateManager(Subject):
             "Black and White": generate_bw(deepcopy(cv2_image)),
 
             # power law gamma
-            "Low Gamma": generate_low_gamma(self.curr_cv2_img),
+            "Low Gamma": generate_law_gamma(self.curr_cv2_img),
         }
 
     # Opens an image and properly formats it

@@ -25,7 +25,7 @@ def get_imagetk(image):
         image = Image.fromarray(image)
     return PhotoImage(image)
 
-
+# Guide 4----------------------------------
 # Generate an image with a grayscale filter
 def generate_grayscale(png_image):
     png_image = np.asarray(png_image)  # RGB array
@@ -81,13 +81,13 @@ def generate_bw(png_img, threshold: int = 127):
 
 # Generate an image with low gamma filter based on the image uploaded
 # Gets the user input regarding the gamma constant/value as a parameter
-def generate_low_gamma(img, gamma_const: float = 0.4):
+def generate_law_gamma(img, gamma_const: float = 0.4):
     # converts image to gamma filter using the gamma value the user selected
     gamma = np.array(255 * (img / 255)
                      ** gamma_const, dtype='uint8')
     return get_imagetk(gamma)
 
-
+# Guide 5----------------------------------
 # Generates image w/ salt and pepper noise
 # Gets the image as a parameter
 def salt_and_pepper(img):
