@@ -287,3 +287,15 @@ def generate_more_filters(base_image):
         "Gradient Sobel X": sobel_x,
         "Gradient Sobel Y": sobel_y,
     }
+
+# References
+###
+# https://www.folkstalk.com/tech/rgb-to-grayscale-python-with-code-examples/
+# https://pythontic.com/image-processing/pillow/negative#:~:text=The%20negative%20transformation%20is%20given,darker%20regions%20of%20the%20image.
+# https://pythonexamples.org/python-opencv-convert-image-to-black-and-white/
+# https://theailearner.com/2019/01/26/power-law-gamma-transformations/
+# https://www.geeksforgeeks.org/add-a-salt-and-pepper-noise-to-an-image-with-python/#:~:text=Salt%2Dand%2Dpepper%20noise%20is,%2C%20bit%20transmission%20error%2C%20etc.
+# https://www.geeksforgeeks.org/spatial-filters-averaging-filter-and-median-filter-in-image-processing/
+# https://www.youtube.com/watch?v=5l0y-LMM1c0&t=39s
+# https://github.com/adamiao/sobel-filter-tutorial/blob/master/sobel_from_scratch.py
+# ###

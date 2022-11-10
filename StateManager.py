@@ -291,3 +291,9 @@ class StateManager(Subject):
         except AttributeError:
             # Display error on failure
             pass
+
+# References
+###
+# https://www.youtube.com/watch?v=0Kwqdkhgbfw&t=931s
+# https://stackoverflow.com/questions/39885178/how-can-i-see-the-rgb-channels-of-a-given-image-with-python
+# ###
