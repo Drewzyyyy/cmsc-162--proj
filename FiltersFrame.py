@@ -170,7 +170,7 @@ class FiltersFrame(Frame):
         # Set the main image to the chosen filter
         self.states.curr_img = self.filters[image_filter]
 
-        if image_filter == "Low Gamma":
+        if image_filter == "Law Gamma":
             # Create a slider to change the gamma constant
             self.filter_label = Label(self,
                                       text="Gamma Const")
@@ -221,9 +221,9 @@ class FiltersFrame(Frame):
 
         # Get the current filter used (Black and White or Low Gamma)
         curr_filter = self.current_main_filter.get()
-        if curr_filter == "Low Gamma":
+        if curr_filter == "Law Gamma":
             # If Low Gamma generate a new image with the chosen gamma constant
-            self.filters["Low Gamma"] = generate_law_gamma(self.default_img, self.filter_scale_val.get())
+            self.filters["Law Gamma"] = generate_law_gamma(self.default_img, self.filter_scale_val.get())
         else:
             # Else if Black and White generate a new image with the chosen threshold value
             cv2_image = cv2.cvtColor(self.default_img, cv2.COLOR_BGR2GRAY)
