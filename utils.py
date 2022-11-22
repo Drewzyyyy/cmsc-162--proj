@@ -292,6 +292,20 @@ def gradient_sobel(img):
 
     return get_imagetk(final_img), get_imagetk(x_grad), get_imagetk(y_grad)
 
+def contraharmonic():
+    # Pang-test pero change ni drew
+    img = cv2.imread('./assets/salt_and_pepper.png')
+    cv2.imshow('orig', img)
+    q = 1.5
+    size = (3,3)
+    numerator = np.power(img, q+1)
+    denominator = np.power(img, q)
+    kernel = np.full(size, 1.0)
+    print(kernel)
+
+    res = cv2.filter2D(numerator, -1, kernel) / cv2.filter2D(denominator, -1, kernel)
+    cv2.imshow('contra', res.astype(np.uint8))
+
 
 def generate_more_filters(base_image):
     if base_image == 'Grayscale':
@@ -334,4 +348,5 @@ def generate_more_filters(base_image):
 # https://www.geeksforgeeks.org/spatial-filters-averaging-filter-and-median-filter-in-image-processing/
 # https://www.youtube.com/watch?v=5l0y-LMM1c0&t=39s
 # https://github.com/adamiao/sobel-filter-tutorial/blob/master/sobel_from_scratch.py
+# https://stackabuse.com/introduction-to-image-processing-in-python-with-opencv/ 
 # ###

@@ -13,6 +13,7 @@ from utils import \
     salt_and_pepper, \
     salt, \
     pepper, \
+    contraharmonic, \
     open_image
 from copy import deepcopy
 
@@ -263,7 +264,10 @@ class StateManager(Subject):
             "Salt": salt(deepcopy(cv2_image)),
 
             # salt
-            "Pepper": pepper(deepcopy(cv2_image))
+            "Pepper": pepper(deepcopy(cv2_image)),
+
+            # contraharmonic
+            "Contraharmonic": contraharmonic()
         }
 
     # Opens an image and properly formats it
