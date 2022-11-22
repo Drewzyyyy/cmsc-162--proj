@@ -11,6 +11,8 @@ from utils import \
     generate_bw, \
     generate_negative, \
     salt_and_pepper, \
+    salt, \
+    pepper, \
     open_image
 from copy import deepcopy
 
@@ -256,6 +258,12 @@ class StateManager(Subject):
 
             # power law gamma
             "Law Gamma": generate_law_gamma(self.curr_cv2_img),
+
+            # salt
+            "Salt": salt(deepcopy(cv2_image)),
+
+            # salt
+            "Pepper": pepper(deepcopy(cv2_image))
         }
 
     # Opens an image and properly formats it

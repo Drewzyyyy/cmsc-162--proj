@@ -117,6 +117,42 @@ def salt_and_pepper(img):
     cv2.imwrite('./assets/salt_and_pepper.png', img)
     return get_imagetk(img)
 
+def salt(img):
+    rows, cols = img.shape
+
+    # Randomly generates random number of pixels to be affected by the salt and pepper noise
+    num_pix = randint(300, 10000)
+
+    # Change to white
+    for i in range(num_pix):
+        # choose random coordinates
+        y = randint(0, rows - 1)
+        x = randint(0, cols - 1)
+        img[y][x] = 255  # turn random pixel to white
+
+    cv2.imwrite('./assets/salt.png', img)
+    cv2.imshow('salt', img)
+    return get_imagetk(img)
+
+def pepper(img):
+    rows, cols = img.shape
+
+    # Randomly generates random number of pixels to be affected by the salt and pepper noise
+    num_pix = randint(300, 10000)
+
+    # Change to black
+    num_pix = randint(300,
+                      10000)  # Randomly generates random number of pixels to be affected by the salt and pepper noise
+    for i in range(num_pix):
+        # choose random coordinates
+        y = randint(0, rows - 1)
+        x = randint(0, cols - 1)
+        img[y][x] = 0  # turn random pixel to black
+
+    cv2.imwrite('./assets/pepper.png', img)
+    cv2.imshow('pepper', img)
+    return get_imagetk(img)
+
 
 # Generates image w/ averaging filter
 # Gets the image as a parameter
