@@ -1,11 +1,12 @@
 from tkinter import filedialog
 from tkinter import filedialog
-from PIL import Image
+from PIL import Image, ImageOps
 from PIL.ImageTk import PhotoImage
 import cv2
 import numpy as np
 from random import randint
 from copy import deepcopy
+import os
 
 
 # Open local image
@@ -301,11 +302,131 @@ def contraharmonic():
     numerator = np.power(img, q+1)
     denominator = np.power(img, q)
     kernel = np.full(size, 1.0)
-    print(kernel)
 
     res = cv2.filter2D(numerator, -1, kernel) / cv2.filter2D(denominator, -1, kernel)
     cv2.imshow('contra', res.astype(np.uint8))
 
+def img_size(img_filename):
+    status = os.stat(img_filename)
+    img_size = status.st_size
+    print(img_filename+ ' ' + str(img_size))
+
+# Compression Algo 1
+def run_length_encoding():
+    img = cv2.imread('./assets/pic.png', 0)
+    cv2.imwrite('./assets/grayscale.png', img)
+    img_size('./assets/grayscale.png')
+
+    ret,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
+
+    no_bits = 8
+    encoded = []
+    shp = img.shape
+    cnt = 0
+    previous = None
+    flattened_img = img.flatten()
+    thresh = 127
+    
+    for pix in flattened_img:
+        # if pixel<thresh:
+        #     pixel=0
+        # else:
+        #     pixel=1
+
+        if previous==None:
+            previous=pix
+            cnt+=1
+        else:
+            if previous!=pix:
+                encoded.append((cnt,previous))
+                previous=pix
+                cnt=1
+            else:
+                if cnt<(2**no_bits)-1:
+                    cnt+=1
+                else:
+                    encoded.append((cnt, previous))
+                    previous=pix
+                    cnt=1
+    encoded.append((cnt, previous))
+    arr = np.array(encoded)
+    cv2.imwrite('./assets/compressed.tif', arr)
+    img_size('./assets/compressed.tif')
+    decoded_img = run_length_decoding(encoded, shp)
+    # cv2.imshow('Decoded', decoded_img)
+
+def run_length_decoding(encoded, shape):
+    decoded = []
+    for i in encoded:
+        len, pix = i[0], i[1]
+        decoded.extend([pix]*len)
+    decoded_img = np.array(decoded).reshape(shape)
+    decoded_img = cv2.normalize(decoded_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
+    decoded_img = decoded_img.astype('uint8')
+    cv2.imwrite('./assets/decompressed.tif', decoded_img)
+    img_size('./assets/decompressed.tif')
+    return decoded_img
+
+# Compression Algo 2
+def encoding_2(arr):
+    i=0
+    string = ""
+    while i < len(arr):
+        c=0
+        el=arr[i]
+        while i<len(arr) and abs(arr[i]-el)<=10:
+            c+=1
+            i+=1
+        el_bin = "{0:08b}".format(el)
+        c_bin = "{0:08b}".format(c)
+        string = string+el_bin+c_bin
+    
+    return string
+
+def compression():
+    img_gray = cv2.imread('./assets/pic.png', 0)
+    cv2.imwrite('./assets/grayscale.png', img_gray)
+    file = open('encode.txt', "w")
+    img = Image.open('./assets/pic.png')
+    img = ImageOps.grayscale(img)
+    img_size('./assets/grayscale.png')
+    img_ar = np.array(img)
+    W, H = img_ar.shape
+
+    bits=0
+    for row in img_ar:
+        l = encoding_2(row) + '\n'
+        
+        bits+=len(l)
+        file.write(l)
+    file.close()
+    orig_bits = W*H*8
+    print("========== COMPRESSION SUCCESSFULLY DONE =========")
+    print("COMPRESSED IMAGEFILE NAME : " , './assets/pic.png')
+    print("ORIGINAL SIZE OF IMAGE IN BITS (WxHx8)", orig_bits , ' WHICH IS : ' , orig_bits/8000 ,' KB')
+    print("AFTER RLE COMPRESSION SIZE IN BITS " ,  bits , ' WHICH IS : ' , bits/8000 , ' KB')
+    print("COMPRESSION PERCENTAGE : " , ((orig_bits-bits)/orig_bits)*100 , "%")
+
+    decode('encode.txt', W, H)
+
+def decode( filename, W, H ):
+    file = open(filename,"r+") 
+    extract = file.read().split('\n')
+    ar= []
+    for li in extract:
+        for i in range(0,len(li),16):
+            el = li[i:i+8]
+            cnt = li[i+8:i+16]
+            el = int(el,2)
+            cnt = int(cnt,2)
+            ar = ar+ cnt*[el]
+    file.close()
+    new_img = np.array(ar)
+    new_img = np.reshape(new_img , (W, H))
+    new_img = new_img.astype('uint8')
+    cv2.imwrite('./assets/decompressed.tif', new_img)
+    cv2.imshow('decoded', new_img)
+    # return  new_img
 
 def generate_more_filters(base_image):
     if base_image == 'Grayscale':

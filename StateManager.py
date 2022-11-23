@@ -14,7 +14,11 @@ from utils import \
     salt, \
     pepper, \
     contraharmonic, \
-    open_image
+    open_image, \
+    img_size, \
+    run_length_encoding, \
+    encoding_2, \
+    compression
 from copy import deepcopy
 
 
@@ -267,7 +271,10 @@ class StateManager(Subject):
             "Pepper": pepper(deepcopy(cv2_image)),
 
             # contraharmonic
-            "Contraharmonic": contraharmonic()
+            "Contraharmonic": contraharmonic(),
+
+            # rle
+            "Run Length": compression()
         }
 
     # Opens an image and properly formats it
