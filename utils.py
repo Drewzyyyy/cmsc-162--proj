@@ -1,5 +1,4 @@
 from tkinter import filedialog
-from tkinter import filedialog
 from PIL import Image, ImageOps
 from PIL.ImageTk import PhotoImage
 import cv2
@@ -7,6 +6,7 @@ import numpy as np
 from random import randint
 from copy import deepcopy
 import os
+from math import floor
 
 
 # Open local image
@@ -118,6 +118,7 @@ def salt_and_pepper(img):
     cv2.imwrite('./assets/salt_and_pepper.png', img)
     return get_imagetk(img)
 
+
 def salt(img):
     rows, cols = img.shape
 
@@ -131,9 +132,8 @@ def salt(img):
         x = randint(0, cols - 1)
         img[y][x] = 255  # turn random pixel to white
 
-    cv2.imwrite('./assets/salt.png', img)
-    cv2.imshow('salt', img)
     return get_imagetk(img)
+
 
 def pepper(img):
     rows, cols = img.shape
@@ -150,8 +150,6 @@ def pepper(img):
         x = randint(0, cols - 1)
         img[y][x] = 0  # turn random pixel to black
 
-    cv2.imwrite('./assets/pepper.png', img)
-    cv2.imshow('pepper', img)
     return get_imagetk(img)
 
 
@@ -293,140 +291,98 @@ def gradient_sobel(img):
 
     return get_imagetk(final_img), get_imagetk(x_grad), get_imagetk(y_grad)
 
-def contraharmonic():
-    # Pang-test pero change ni drew
-    img = cv2.imread('./assets/salt_and_pepper.png')
-    cv2.imshow('orig', img)
+
+def contra_harmonic():
+    salt_and_pepper_img = cv2.imread('./assets/salt_and_pepper.png')
     q = 1.5
-    size = (3,3)
-    numerator = np.power(img, q+1)
-    denominator = np.power(img, q)
+    size = (3, 3)
+    numerator = np.power(salt_and_pepper_img, q + 1)
+    denominator = np.power(salt_and_pepper_img, q)
     kernel = np.full(size, 1.0)
 
     res = cv2.filter2D(numerator, -1, kernel) / cv2.filter2D(denominator, -1, kernel)
-    cv2.imshow('contra', res.astype(np.uint8))
+
 
 def img_size(img_filename):
     status = os.stat(img_filename)
-    img_size = status.st_size
-    print(img_filename+ ' ' + str(img_size))
+    size = str(status.st_size)
+    print(f"{img_filename} {str(size)}")
 
-# Compression Algo 1
-def run_length_encoding():
-    img = cv2.imread('./assets/pic.png', 0)
-    cv2.imwrite('./assets/grayscale.png', img)
-    img_size('./assets/grayscale.png')
-
-    ret,img = cv2.threshold(img,127,255,cv2.THRESH_BINARY+cv2.THRESH_OTSU)
-
-    no_bits = 8
-    encoded = []
-    shp = img.shape
-    cnt = 0
-    previous = None
-    flattened_img = img.flatten()
-    thresh = 127
-    
-    for pix in flattened_img:
-        # if pixel<thresh:
-        #     pixel=0
-        # else:
-        #     pixel=1
-
-        if previous==None:
-            previous=pix
-            cnt+=1
-        else:
-            if previous!=pix:
-                encoded.append((cnt,previous))
-                previous=pix
-                cnt=1
-            else:
-                if cnt<(2**no_bits)-1:
-                    cnt+=1
-                else:
-                    encoded.append((cnt, previous))
-                    previous=pix
-                    cnt=1
-    encoded.append((cnt, previous))
-    arr = np.array(encoded)
-    cv2.imwrite('./assets/compressed.tif', arr)
-    img_size('./assets/compressed.tif')
-    decoded_img = run_length_decoding(encoded, shp)
-    # cv2.imshow('Decoded', decoded_img)
-
-def run_length_decoding(encoded, shape):
-    decoded = []
-    for i in encoded:
-        len, pix = i[0], i[1]
-        decoded.extend([pix]*len)
-    decoded_img = np.array(decoded).reshape(shape)
-    decoded_img = cv2.normalize(decoded_img, None, alpha=0, beta=255, norm_type=cv2.NORM_MINMAX)
-    decoded_img = decoded_img.astype('uint8')
-    cv2.imwrite('./assets/decompressed.tif', decoded_img)
-    img_size('./assets/decompressed.tif')
-    return decoded_img
 
 # Compression Algo 2
 def encoding_2(arr):
-    i=0
+    # i = 0
     string = ""
-    while i < len(arr):
-        c=0
-        el=arr[i]
-        while i<len(arr) and abs(arr[i]-el)<=10:
-            c+=1
-            i+=1
-        el_bin = "{0:08b}".format(el)
-        c_bin = "{0:08b}".format(c)
-        string = string+el_bin+c_bin
-    
-    return string
+    curr_val: int = arr[0]
+    c = 1
+    for byte in arr[1:]:
+        if byte == curr_val:
+            c += 1
+        else:
+            if c == 1:
+                string += f"{curr_val},"
+            else:
+                string += f"{curr_val} {c},"
+                c = 1
+            curr_val = byte
+    if c == 1:
+        string += f"{curr_val}"
+    else:
+        string += f"{curr_val} {c}"
 
-def compression():
-    img_gray = cv2.imread('./assets/pic.png', 0)
-    cv2.imwrite('./assets/grayscale.png', img_gray)
-    file = open('encode.txt', "w")
-    img = Image.open('./assets/pic.png')
-    img = ImageOps.grayscale(img)
-    img_size('./assets/grayscale.png')
-    img_ar = np.array(img)
-    W, H = img_ar.shape
+    return f"{string}\n".encode('utf-8'), len(string)
 
-    bits=0
-    for row in img_ar:
-        l = encoding_2(row) + '\n'
-        
-        bits+=len(l)
-        file.write(l)
-    file.close()
-    orig_bits = W*H*8
+
+def compression(cv2_image):
+    width, height = cv2_image.shape
+    with open('encode.txt', "a+b") as encoding_file:
+        encoding_file.truncate(0)
+        bits = 0
+        for row in cv2_image:
+            line, row_bits = encoding_2(row)
+
+            bits += row_bits
+            encoding_file.write(line)
+    orig_bits = width * height * 8
     print("========== COMPRESSION SUCCESSFULLY DONE =========")
-    print("COMPRESSED IMAGEFILE NAME : " , './assets/pic.png')
-    print("ORIGINAL SIZE OF IMAGE IN BITS (WxHx8)", orig_bits , ' WHICH IS : ' , orig_bits/8000 ,' KB')
-    print("AFTER RLE COMPRESSION SIZE IN BITS " ,  bits , ' WHICH IS : ' , bits/8000 , ' KB')
-    print("COMPRESSION PERCENTAGE : " , ((orig_bits-bits)/orig_bits)*100 , "%")
+    print("COMPRESSED IMAGEFILE NAME : ", './assets/pic.png')
+    print("ORIGINAL SIZE OF IMAGE IN BITS (WxHx8)", orig_bits, ' WHICH IS : ', orig_bits / 8000, ' KB')
+    print("AFTER RLE COMPRESSION SIZE IN BITS ", bits, ' WHICH IS : ', bits / 8000, ' KB')
+    print("COMPRESSION PERCENTAGE : ", ((orig_bits - bits) / orig_bits) * 100, "%")
 
-    decode('encode.txt', W, H)
+    decode('encode.txt', width, height)
 
-def decode( filename, W, H ):
-    file = open(filename,"r+") 
-    extract = file.read().split('\n')
-    ar= []
-    for li in extract:
-        for i in range(0,len(li),16):
-            el = li[i:i+8]
-            cnt = li[i+8:i+16]
-            el = int(el,2)
-            cnt = int(cnt,2)
-            ar = ar+ cnt*[el]
-    file.close()
-    new_img = np.array(ar)
-    new_img = np.reshape(new_img , (W, H))
+
+def decode(filename, width, height):
+    with open(filename, "r+") as file:
+        extract = file.read().split('\n')
+        new_img = None
+        for line in extract[:len(extract) - 1]:
+            values = line.split(",")
+            line_values = []
+            for value in values:
+                value = value.split(" ")
+                if len(value) == 1:
+                    line_values.append(int(value[0]))
+                else:
+                    line_values.extend([int(value[0])] * int(value[1]))
+            if new_img is None:
+                new_img = np.array([line_values])
+            else:
+                new_img = np.append(new_img, np.array([line_values]), axis=0)
+        #     for i in range(0, len(li), 16):
+        #         el = li[i:i + 8]
+        #         cnt = li[i + 8:i + 16]
+        #         el = int(el, 2)
+        #         cnt = int(cnt, 2)
+        #         ar = ar + cnt * [el]
+    new_img = np.reshape(new_img, (width, height))
     new_img = new_img.astype('uint8')
     cv2.imwrite('./assets/decompressed.tif', new_img)
     cv2.imshow('decoded', new_img)
+    cv2.waitKey(0)
     # return  new_img
+
 
 def generate_more_filters(base_image):
     if base_image == 'Grayscale':
@@ -458,6 +414,19 @@ def generate_more_filters(base_image):
         "Gradient Sobel X": sobel_x,
         "Gradient Sobel Y": sobel_y,
     }
+
+
+# Get bit plane
+def get_bit_planes(grayscale_img):
+    return [255 * ((grayscale_img & (1 << i)) >> i) for i in range(8)]
+
+
+# Add watermark
+def add_watermark(watermark_img, bit_planes, image_size):
+    watermark_img = cv2.COLOR_RGB2GRAY(watermark_img)
+    watermark_img_resized = float(cv2.resize(watermark_img, image_size[0] * image_size[1]))
+    bit_planes[0] = cv2.threshold(watermark_img_resized, 127, 255, cv2.THRESH_BINARY)
+    return bit_planes
 
 # References
 ###
