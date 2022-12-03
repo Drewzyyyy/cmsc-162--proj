@@ -1,5 +1,6 @@
 from tkinter import Menu
 from functools import partial
+from utils import add_watermark, open_bit_plane_window
 
 
 # Generates the window menu
@@ -23,12 +24,22 @@ class Menus(Menu):
         file.add_command(label="Exit", command=parent.quit)
         self.add_cascade(label="File", menu=file)
 
+        # Edit menu
+        self.edit = Menu(self, tearoff=0)
+        self.edit.add_command(label="Show Bit Planes",
+                              command=partial(open_bit_plane_window, parent),
+                              state="disabled")
+        self.edit.add_command(label="Add Watermark",
+                              command=partial(add_watermark, parent),
+                              state="disabled")
+        self.add_cascade(label="Edit", menu=self.edit)
+
         # Changes the color channel
-        edit = Menu(self, tearoff=0)
+        change_channel = Menu(self, tearoff=0)
 
         # Channels tabs
-        self.channels = Menu(edit, tearoff=0)
-        edit.add_cascade(label="Change Channel", menu=self.channels)
+        self.channels = Menu(change_channel, tearoff=0)
+        change_channel.add_cascade(label="Change Channel", menu=self.channels)
         self.channels.add_command(label="RED",
                                   command=partial(self.metadata_frame.histogram_frame.set_images, "Red"),
                                   state="disabled")
@@ -38,7 +49,7 @@ class Menus(Menu):
         self.channels.add_command(label="BLUE",
                                   command=partial(self.metadata_frame.histogram_frame.set_images, "Blue"),
                                   state="disabled")
-        self.add_cascade(label="Channels", menu=edit)
+        self.add_cascade(label="Channels", menu=change_channel)
 
         # List of available filters
         self.main_filters = ["Grayscale",
@@ -61,8 +72,8 @@ class Menus(Menu):
         self.filters = Menu(self, tearoff=0)
 
         # Grayscale and Salt and Pepper submenus
-        grayscale = Menu(edit, tearoff=0)
-        salt_and_pepper = Menu(edit, tearoff=0)
+        grayscale = Menu(change_channel, tearoff=0)
+        salt_and_pepper = Menu(change_channel, tearoff=0)
 
         # All available commands for changing the filter
         self.filters.add_command(label="Default",
@@ -94,6 +105,41 @@ class Menus(Menu):
                                          state="disabled")
         self.add_cascade(label="Filters", menu=self.filters)
 
+        self.process = Menu(self, tearoff=0)
+        self.degradation = Menu(self, tearoff=0)
+        self.restoration = Menu(self, tearoff=0)
+        self.compression = Menu(self, tearoff=0)
+
+        self.process.add_cascade(label="Degradation",
+                                 menu=self.degradation,
+                                 state="disabled")
+        self.degradation.add_command(label="Salt",
+                                     command=partial(state_manager.open_image_in_new_window, parent, 'Salt'))
+        self.degradation.add_command(label="Pepper",
+                                     command=partial(state_manager.open_image_in_new_window, parent, 'Pepper'))
+        self.degradation.add_command(label="Salt and Pepper",
+                                     command=partial(state_manager.open_image_in_new_window, parent, 'Salt and Pepper'))
+
+        self.process.add_cascade(label="Restoration",
+                                 menu=self.restoration,
+                                 state="disabled")
+        self.restoration.add_command(label="Contraharmonic Filter",
+                                     command=partial(state_manager.open_image_in_new_window, parent, 'Contraharmonic'))
+        self.restoration.add_command(label="Order-Statistics Filter",
+                                     command=partial(state_manager.open_image_in_new_window, parent, 'Median'))
+
+        self.process.add_cascade(label="Compression",
+                                 menu=self.compression,
+                                 state="disabled")
+        self.compression.add_command(label="Run Length Encoding - Grayscale",
+                                     command=partial(state_manager.open_image_in_new_window, parent,
+                                                     'Run Length - Grayscale'))
+        self.compression.add_command(label="Run Length Encoding - Colored",
+                                     command=partial(state_manager.open_image_in_new_window, parent,
+                                                     'Run Length - Colored'))
+
+        self.add_cascade(label="Process", menu=self.process)
+
     # Triggered when image has been uploaded
     def notify(self, states):
         # Enable all previously disabled menus on init
@@ -107,6 +153,11 @@ class Menus(Menu):
             for main_filter in self.main_filters:
                 self.filters.entryconfig(main_filter, state="normal")
             self.filters.entryconfig("Default", state="normal")
+            self.process.entryconfig("Degradation", state="normal")
+            self.process.entryconfig("Restoration", state="normal")
+            self.process.entryconfig("Compression", state="normal")
+            self.edit.entryconfig("Show Bit Planes", state="normal")
+            self.edit.entryconfig("Add Watermark", state="normal")
             self.__are_filters_disabled = False
             states.unsubscribe(self)
 

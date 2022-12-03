@@ -1,12 +1,12 @@
 from tkinter import filedialog
-from PIL import Image, ImageOps
+from PIL import Image
 from PIL.ImageTk import PhotoImage
 import cv2
 import numpy as np
 from random import randint
 from copy import deepcopy
 import os
-from math import floor
+from ImageWindow import ImageWindow
 
 
 # Open local image
@@ -139,7 +139,7 @@ def pepper(img):
     rows, cols = img.shape
 
     # Randomly generates random number of pixels to be affected by the salt and pepper noise
-    num_pix = randint(300, 10000)
+    randint(300, 10000)
 
     # Change to black
     num_pix = randint(300,
@@ -301,17 +301,16 @@ def contra_harmonic():
     kernel = np.full(size, 1.0)
 
     res = cv2.filter2D(numerator, -1, kernel) / cv2.filter2D(denominator, -1, kernel)
+    return get_imagetk(res.astype('uint8'))
 
 
 def img_size(img_filename):
     status = os.stat(img_filename)
     size = str(status.st_size)
-    print(f"{img_filename} {str(size)}")
 
 
 # Compression Algo 2
-def encoding_2(arr):
-    # i = 0
+def encoding_bw(arr):
     string = ""
     curr_val: int = arr[0]
     c = 1
@@ -333,27 +332,59 @@ def encoding_2(arr):
     return f"{string}\n".encode('utf-8'), len(string)
 
 
-def compression(cv2_image):
+def encoding_rgb(arr):
+    string = ""
+    curr_val: list = arr[0]
+    c = 1
+    for byte in arr[1:]:
+        if np.array_equal(curr_val, byte):
+            c += 1
+        else:
+            if c == 1:
+                string += f"{' '.join(str(val) for val in curr_val)},"
+            else:
+                string += f"{' '.join(str(val) for val in curr_val)} {c},"
+                c = 1
+            curr_val = byte
+    if c == 1:
+        string += f"{' '.join(str(val) for val in curr_val)}"
+    else:
+        string += f"{' '.join(str(val) for val in curr_val)} {c}"
+
+    return f"{string}\n", len(string)
+
+
+def bw_compression(cv2_image):
     width, height = cv2_image.shape
     with open('encode.txt', "a+b") as encoding_file:
         encoding_file.truncate(0)
         bits = 0
         for row in cv2_image:
-            line, row_bits = encoding_2(row)
+            line, row_bits = encoding_bw(row)
 
             bits += row_bits
             encoding_file.write(line)
+    return decode_bw('encode.txt', width, height)
+
+
+def rgb_compression(cv2_image):
+    cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+    width, height, _ = cv2_image.shape
+    with open('encode_rgb.txt', "a+") as encoding_file:
+        encoding_file.truncate(0)
+        bits = 0
+        for row in cv2_image:
+            line, row_bits = encoding_rgb(row)
+            bits += row_bits
+            encoding_file.write(line)
     orig_bits = width * height * 8
-    print("========== COMPRESSION SUCCESSFULLY DONE =========")
-    print("COMPRESSED IMAGEFILE NAME : ", './assets/pic.png')
-    print("ORIGINAL SIZE OF IMAGE IN BITS (WxHx8)", orig_bits, ' WHICH IS : ', orig_bits / 8000, ' KB')
-    print("AFTER RLE COMPRESSION SIZE IN BITS ", bits, ' WHICH IS : ', bits / 8000, ' KB')
-    print("COMPRESSION PERCENTAGE : ", ((orig_bits - bits) / orig_bits) * 100, "%")
-
-    decode('encode.txt', width, height)
+    more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
+                f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
+                f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
+    return decode_rgb('encode_rgb.txt')
 
 
-def decode(filename, width, height):
+def decode_bw(filename, width, height):
     with open(filename, "r+") as file:
         extract = file.read().split('\n')
         new_img = None
@@ -370,18 +401,33 @@ def decode(filename, width, height):
                 new_img = np.array([line_values])
             else:
                 new_img = np.append(new_img, np.array([line_values]), axis=0)
-        #     for i in range(0, len(li), 16):
-        #         el = li[i:i + 8]
-        #         cnt = li[i + 8:i + 16]
-        #         el = int(el, 2)
-        #         cnt = int(cnt, 2)
-        #         ar = ar + cnt * [el]
     new_img = np.reshape(new_img, (width, height))
     new_img = new_img.astype('uint8')
-    cv2.imwrite('./assets/decompressed.tif', new_img)
-    cv2.imshow('decoded', new_img)
-    cv2.waitKey(0)
-    # return  new_img
+    cv2.imwrite('./assets/decompressed_bw.tiff', new_img)
+    return get_imagetk(new_img)
+
+
+def decode_rgb(filename):
+    with open(filename, "r+") as file:
+        extract = file.read().split('\n')
+        new_img = None
+        for line in extract[:len(extract) - 1]:
+            values = line.split(",")
+            line_values = []
+            for value in values:
+                rgb_values = value.split(' ')
+                if len(rgb_values) == 3:
+                    line_values.append(np.array([int(val) for val in rgb_values]))
+                else:
+                    for idx in range(int(rgb_values[3])):
+                        line_values.append(np.array([int(rgb_values[0]), int(rgb_values[1]), int(rgb_values[2])]))
+            if new_img is None:
+                new_img = np.array([line_values])
+            else:
+                new_img = np.append(new_img, np.array([line_values]), axis=0)
+    new_img = new_img.astype('uint8')
+    cv2.imwrite('./assets/decompressed_rgb.tiff', new_img)
+    return get_imagetk(new_img)
 
 
 def generate_more_filters(base_image):
@@ -416,17 +462,57 @@ def generate_more_filters(base_image):
     }
 
 
-# Get bit plane
-def get_bit_planes(grayscale_img):
-    return [255 * ((grayscale_img & (1 << i)) >> i) for i in range(8)]
+def get_bit_planes():
+    cv2_image = cv2.imread(f'./assets/pic.png', 0)
+    return [255 * ((cv2_image & (1 << i)) >> i) for i in range(8)]
+
+
+def blend_planes(watermark_bits, orig_image):
+    width, height = orig_image.shape
+    blended_image = None
+    for row, row_arr in enumerate(orig_image):
+        flipped_msb_row = []
+        for idx, val in enumerate(row_arr):
+            bin_val = list(f"{val:b}")
+            bin_val[0] = str(1 if watermark_bits[row][idx] else 0)
+            flipped_msb_row.append(int("".join(bin_val), 2))
+        if blended_image is None:
+            blended_image = np.array([flipped_msb_row])
+        else:
+            blended_image = np.append(blended_image, np.array([flipped_msb_row]), axis=0)
+    blended_image = np.reshape(blended_image, (width, height))
+    blended_image = blended_image.astype('uint8')
+    return get_imagetk(blended_image)
 
 
 # Add watermark
-def add_watermark(watermark_img, bit_planes, image_size):
-    watermark_img = cv2.COLOR_RGB2GRAY(watermark_img)
-    watermark_img_resized = float(cv2.resize(watermark_img, image_size[0] * image_size[1]))
-    bit_planes[0] = cv2.threshold(watermark_img_resized, 127, 255, cv2.THRESH_BINARY)
-    return bit_planes
+def add_watermark(root):
+    # Open image
+    image_path = open_image()
+    watermark_img = cv2.imread(image_path)
+    watermark_img = cv2.cvtColor(watermark_img, cv2.COLOR_BGR2GRAY)
+
+    # Get size
+    orig_img = cv2.imread(f'./assets/pic.png', 0)
+    width, height = orig_img.shape
+
+    watermark_img_resized = cv2.resize(watermark_img, (width, height))
+    _, watermark_img_resized = cv2.threshold(watermark_img_resized, 127, 255, cv2.THRESH_BINARY)
+
+    bit_planes = get_bit_planes()
+    bit_planes[0] = watermark_img_resized
+    bit_planes = [get_imagetk(image) for image in bit_planes]
+
+    bit_planes.append(blend_planes(watermark_img_resized, orig_img))
+
+    ImageWindow(root, bit_planes, title="Bit Planes with Watermark")
+
+
+def open_bit_plane_window(root):
+    bit_planes = get_bit_planes()
+    bit_planes = [get_imagetk(image) for image in bit_planes]
+
+    ImageWindow(root, bit_planes, title="Bit Planes")
 
 # References
 ###
