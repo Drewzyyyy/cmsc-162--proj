@@ -318,41 +318,44 @@ class StateManager(Subject):
             pass
 
     def open_image_in_new_window(self, root, image_to_show):
-        if image_to_show == "Median":
-            cv2_image = cv2.imread('./assets/salt_and_pepper.png', 0)
-            image = median_filtering(cv2_image)
-            ImageWindow(root, image, title=f"Order-Statistics Filtered Image")
-        elif image_to_show == "Run Length - Grayscale":
-            cv2_image = cv2.imread('./assets/pic.png', 0)
-            width, height = cv2_image.shape
-            orig_bits = width * height * 8
-            with open('encode.txt', "r+") as encoding_file:
-                lines = encoding_file.read().split('\n')
-                bits = 0
-                for line in lines:
-                    bits += len(line)
-            more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
-                        f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
-                        f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
-            ImageWindow(root, self.filters[image_to_show], more_info=more_info,
-                        title="Run Length Encoding(RLE) Compression")
-        elif image_to_show == "Run Length - Colored":
-            cv2_image = cv2.imread('./assets/pic.png', 0)
-            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
-            width, height, _ = cv2_image.shape
-            orig_bits = width * height * 8
-            with open('encode_rgb.txt', "r+") as encoding_file:
-                lines = encoding_file.read().split('\n')
-                bits = 0
-                for line in lines:
-                    bits += len(line)
-            more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
-                        f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
-                        f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
-            ImageWindow(root, self.filters[image_to_show], more_info=more_info,
-                        title="Run Length Encoding(RLE) Compression")
-        else:
-            ImageWindow(root, self.filters[image_to_show], title=f"{image_to_show} Image")
+        try:
+            if image_to_show == "Median":
+                cv2_image = cv2.imread('./assets/salt_and_pepper.png', 0)
+                image = median_filtering(cv2_image)
+                ImageWindow(root, image, title=f"Order-Statistics Filtered Image")
+            elif image_to_show == "Run Length - Grayscale":
+                cv2_image = cv2.imread('./assets/pic.png', 0)
+                width, height = cv2_image.shape
+                orig_bits = width * height * 8
+                with open('encode.txt', "r+") as encoding_file:
+                    lines = encoding_file.read().split('\n')
+                    bits = 0
+                    for line in lines:
+                        bits += len(line)
+                more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
+                            f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
+                            f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
+                ImageWindow(root, self.filters[image_to_show], more_info=more_info,
+                            title="Run Length Encoding(RLE) Compression")
+            elif image_to_show == "Run Length - Colored":
+                cv2_image = cv2.imread('./assets/pic.png', 0)
+                cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+                width, height, _ = cv2_image.shape
+                orig_bits = width * height * 8
+                with open('encode_rgb.txt', "r+") as encoding_file:
+                    lines = encoding_file.read().split('\n')
+                    bits = 0
+                    for line in lines:
+                        bits += len(line)
+                more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
+                            f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
+                            f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
+                ImageWindow(root, self.filters[image_to_show], more_info=more_info,
+                            title="Run Length Encoding(RLE) Compression")
+            else:
+                ImageWindow(root, self.filters[image_to_show], title=f"{image_to_show} Image")
+        except FileNotFoundError:
+            self.status.set("ERROR: The encoded file(s) were deleted please re-upload image.")
 
 # References
 ###

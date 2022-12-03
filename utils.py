@@ -10,13 +10,14 @@ from ImageWindow import ImageWindow
 
 
 # Open local image
-def open_image():
+def open_image(with_pcx=True):
     try:
+        filetypes = [("JPEGs", "*.jpg"), ("PNGs", "*.png"), ("all files", "*.*")]
+        if with_pcx:
+            filetypes.insert(0, ("PCXs", "*.pcx"))
         # Open folder
         return filedialog.askopenfilename(title='Select File',
-                                          filetypes=(
-                                              ("PCXs", "*.pcx"), ("JPEGs", "*.jpg"), ("PNGs", "*.png"),
-                                              ("all files", "*.*")))
+                                          filetypes=filetypes)
     except AttributeError:
         raise AttributeError("Image upload failed.")
 
@@ -378,9 +379,6 @@ def rgb_compression(cv2_image):
             bits += row_bits
             encoding_file.write(line)
     orig_bits = width * height * 8
-    more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
-                f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
-                f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
     return decode_rgb('encode_rgb.txt')
 
 
@@ -488,9 +486,8 @@ def blend_planes(watermark_bits, orig_image):
 # Add watermark
 def add_watermark(root):
     # Open image
-    image_path = open_image()
-    watermark_img = cv2.imread(image_path)
-    watermark_img = cv2.cvtColor(watermark_img, cv2.COLOR_BGR2GRAY)
+    image_path = open_image(False)
+    watermark_img = cv2.imread(image_path, 0)
 
     # Get size
     orig_img = cv2.imread(f'./assets/pic.png', 0)
@@ -501,7 +498,7 @@ def add_watermark(root):
 
     bit_planes = get_bit_planes()
     bit_planes[0] = watermark_img_resized
-    bit_planes = [get_imagetk(image) for image in bit_planes]
+    bit_planes = resize_images(bit_planes)
 
     bit_planes.append(blend_planes(watermark_img_resized, orig_img))
 
@@ -510,9 +507,18 @@ def add_watermark(root):
 
 def open_bit_plane_window(root):
     bit_planes = get_bit_planes()
-    bit_planes = [get_imagetk(image) for image in bit_planes]
+    bit_planes = resize_images(bit_planes)
 
     ImageWindow(root, bit_planes, title="Bit Planes")
+
+
+def resize_images(images: list):
+    imagetk_list = []
+    for image in images:
+        image = Image.fromarray(image)
+        image.resize((256, 256), Image.LANCZOS)
+        imagetk_list.append(PhotoImage(image))
+    return imagetk_list
 
 # References
 ###
