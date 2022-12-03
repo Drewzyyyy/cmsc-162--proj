@@ -118,7 +118,7 @@ class FiltersFrame(Frame):
         # Temporarily forget the filtered image
         self.filtered_image.grid_forget()
         # If default then display the default grayscale or salt and pepper image
-        if image_filter == "Default":
+        if image_filter == "None":
             self.filtered_image = Label(self,
                                         image=self.filters[chosen_filter],
                                         width=self.winfo_reqwidth(),

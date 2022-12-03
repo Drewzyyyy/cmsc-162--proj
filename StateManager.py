@@ -11,8 +11,15 @@ from utils import \
     generate_bw, \
     generate_negative, \
     salt_and_pepper, \
-    open_image
+    contra_harmonic, \
+    salt, \
+    pepper, \
+    open_image, \
+    bw_compression, \
+    median_filtering, \
+    rgb_compression
 from copy import deepcopy
+from ImageWindow import ImageWindow
 
 
 # Custom subject class that triggers the update method of classes when variables are changed
@@ -256,6 +263,21 @@ class StateManager(Subject):
 
             # power law gamma
             "Law Gamma": generate_law_gamma(self.curr_cv2_img),
+
+            # salt
+            "Salt": salt(deepcopy(cv2_image)),
+
+            # pepper
+            "Pepper": pepper(deepcopy(cv2_image)),
+
+            # contraharmonic
+            "Contraharmonic": contra_harmonic(),
+
+            # rle gray
+            "Run Length - Grayscale": bw_compression(deepcopy(cv2_image)),
+
+            # rle rgb
+            "Run Length - Colored": rgb_compression(deepcopy(self.curr_cv2_img))
         }
 
     # Opens an image and properly formats it
@@ -294,6 +316,43 @@ class StateManager(Subject):
         except AttributeError:
             # Display error on failure
             pass
+
+    def open_image_in_new_window(self, root, image_to_show):
+        if image_to_show == "Median":
+            cv2_image = cv2.imread('./assets/salt_and_pepper.png', 0)
+            image = median_filtering(cv2_image)
+            ImageWindow(root, image, title=f"Order-Statistics Filtered Image")
+        elif image_to_show == "Run Length - Grayscale":
+            cv2_image = cv2.imread('./assets/pic.png', 0)
+            width, height = cv2_image.shape
+            orig_bits = width * height * 8
+            with open('encode.txt', "r+") as encoding_file:
+                lines = encoding_file.read().split('\n')
+                bits = 0
+                for line in lines:
+                    bits += len(line)
+            more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
+                        f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
+                        f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
+            ImageWindow(root, self.filters[image_to_show], more_info=more_info,
+                        title="Run Length Encoding(RLE) Compression")
+        elif image_to_show == "Run Length - Colored":
+            cv2_image = cv2.imread('./assets/pic.png', 0)
+            cv2_image = cv2.cvtColor(cv2_image, cv2.COLOR_BGR2RGB)
+            width, height, _ = cv2_image.shape
+            orig_bits = width * height * 8
+            with open('encode_rgb.txt', "r+") as encoding_file:
+                lines = encoding_file.read().split('\n')
+                bits = 0
+                for line in lines:
+                    bits += len(line)
+            more_info = f"ORIGINAL SIZE OF IMAGE IN BITS (WxHx8) {orig_bits} WHICH IS {orig_bits / 8000} KB\n" \
+                        f"AFTER LRE COMPRESSIONS SIZE IN BITS {bits} WHICH IS {bits / 8000} KB\n" \
+                        f"COMPRESSION PERCENTAGE: {((orig_bits - bits) / orig_bits) * 100}%"
+            ImageWindow(root, self.filters[image_to_show], more_info=more_info,
+                        title="Run Length Encoding(RLE) Compression")
+        else:
+            ImageWindow(root, self.filters[image_to_show], title=f"{image_to_show} Image")
 
 # References
 ###
